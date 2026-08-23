@@ -1,7 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { getSupabaseBrowser } from '@/lib/supabase-browser';
+import {
+  chargerEntrees,
+  getSupabaseBrowser,
+  variablesSupabaseManquantes,
+} from '@/lib/supabase-browser';
 import {
   DELAI_LABEL,
   Entree,
@@ -25,6 +29,11 @@ export function Consultation() {
 
   useEffect(() => {
     setMonte(true);
+    // Configuration incomplète : message explicite, sans tenter le temps réel.
+    if (variablesSupabaseManquantes().length > 0) {
+      chargerEntrees().then((r) => setErreur(`Chargement impossible — ${r.erreur}.`));
+      return;
+    }
     const supabase = getSupabaseBrowser();
     let actif = true;
 
@@ -35,16 +44,14 @@ export function Consultation() {
     };
 
     async function chargementInitial() {
-      const { data, error } = await supabase
-        .from('analyses_impactees')
-        .select('*');
+      const r = await chargerEntrees();
       if (!actif) return;
-      if (error) {
-        setErreur('Chargement impossible. Vérifiez la connexion puis rechargez la page.');
+      if (r.erreur !== undefined) {
+        setErreur(`Chargement impossible — ${r.erreur}.`);
         return;
       }
       setErreur(null);
-      appliquer((data ?? []) as Entree[]);
+      appliquer(r.entrees);
     }
 
     chargementInitial();
@@ -103,8 +110,10 @@ export function Consultation() {
         </header>
       </div>
 
-      {/* Bande de synthèse : total + ventilation par statut (PRD §4.3) */}
-      {entrees !== null && total > 0 && (
+      {/* Dashboard récapitulatif : total + ventilation par statut (PRD §4.3),
+          toujours affiché une fois les données chargées — y compris à zéro,
+          pour donner l'état de la production d'un coup d'œil. */}
+      {entrees !== null && (
         <div className="band">
           <div className="wrap">
             <div className="synth">
@@ -116,16 +125,16 @@ export function Consultation() {
                 </div>
               </div>
               <div className="tallies">
-                {(['indisponible', 'anomalie', 'retard'] as Statut[]).map(
-                  (s) =>
-                    compteurs[s] > 0 && (
-                      <div className="tally" key={s}>
-                        <i style={{ background: `var(--statut-${s})` }} aria-hidden="true" />{' '}
-                        <b>{compteurs[s]}</b>{' '}
-                        {s === 'retard' ? 'en retard' : compteurs[s] > 1 ? `${s}s` : s}
-                      </div>
-                    ),
-                )}
+                {(['indisponible', 'anomalie', 'retard'] as Statut[]).map((s) => (
+                  <div
+                    className={`tally${compteurs[s] === 0 ? ' tally-zero' : ''}`}
+                    key={s}
+                  >
+                    <i style={{ background: `var(--statut-${s})` }} aria-hidden="true" />{' '}
+                    <b>{compteurs[s]}</b>{' '}
+                    {s === 'retard' ? 'en retard' : compteurs[s] > 1 ? `${s}s` : s}
+                  </div>
+                ))}
               </div>
             </div>
           </div>

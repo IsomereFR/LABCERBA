@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
-import { getSupabaseBrowser } from '@/lib/supabase-browser';
+import { chargerEntrees } from '@/lib/supabase-browser';
 import {
   DELAI_LABEL,
   Entree,
@@ -276,8 +276,10 @@ export function Admin() {
   const [entrees, setEntrees] = useState<Entree[] | null>(null);
   const [flash, setFlash] = useState<Flash>(null);
   const [enCours, setEnCours] = useState(false);
+  const [onglet, setOnglet] = useState<'signaler' | 'alertes'>('signaler');
   const [editionId, setEditionId] = useState<string | null>(null);
   const [suppressionId, setSuppressionId] = useState<string | null>(null);
+  const [retourId, setRetourId] = useState<string | null>(null);
   const [monte, setMonte] = useState(false);
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -290,14 +292,12 @@ export function Admin() {
   }, []);
 
   const recharger = useCallback(async () => {
-    const { data, error } = await getSupabaseBrowser()
-      .from('analyses_impactees')
-      .select('*');
-    if (error) {
-      signaler({ genre: 'ko', texte: 'Chargement des entrées impossible.' });
+    const r = await chargerEntrees();
+    if (r.erreur !== undefined) {
+      signaler({ genre: 'ko', texte: `Chargement des alertes impossible — ${r.erreur}.` });
       return;
     }
-    setEntrees(trierParGravite((data ?? []) as Entree[]));
+    setEntrees(trierParGravite(r.entrees));
   }, [signaler]);
 
   useEffect(() => {
@@ -400,12 +400,38 @@ export function Admin() {
       </header>
 
       <main className="page" style={{ paddingTop: 0 }}>
+        {/* Menu des deux espaces : signalement et alertes en cours */}
+        <nav className="menu-admin" aria-label="Sections d’administration">
+          <button
+            type="button"
+            className={onglet === 'signaler' ? 'active' : ''}
+            aria-current={onglet === 'signaler' ? 'page' : undefined}
+            onClick={() => setOnglet('signaler')}
+          >
+            Signaler une analyse
+          </button>
+          <button
+            type="button"
+            className={onglet === 'alertes' ? 'active' : ''}
+            aria-current={onglet === 'alertes' ? 'page' : undefined}
+            onClick={() => setOnglet('alertes')}
+          >
+            Alertes en cours
+            {entrees !== null && (
+              <span className="menu-count" aria-label={`${entrees.length} alerte(s)`}>
+                {entrees.length}
+              </span>
+            )}
+          </button>
+        </nav>
+
         {flash && (
           <div className={`flash ${flash.genre}`} role="status">
             {flash.texte}
           </div>
         )}
 
+        {onglet === 'signaler' && (
         <section className="admin-section">
           <CerbaTitle before="Signaler une" accent="analyse impactée" />
           <FormulaireEntree
@@ -417,19 +443,21 @@ export function Admin() {
               if (ok) {
                 signaler({
                   genre: 'ok',
-                  texte: `« ${v.analyse} » publié — visible immédiatement en consultation.`,
+                  texte: `« ${v.analyse} » publié — visible immédiatement en consultation et dans les alertes en cours.`,
                 });
               }
             }}
           />
         </section>
+        )}
 
+        {onglet === 'alertes' && (
         <section className="admin-section">
-          <CerbaTitle before="Entrées" accent="en cours" />
+          <CerbaTitle before="Alertes" accent="en cours" />
           {entrees === null && <p className="hint">Chargement…</p>}
           {entrees !== null && entrees.length === 0 && (
             <p className="hint">
-              Aucune entrée. La consultation affiche l&rsquo;état nominal.
+              Aucune alerte en cours. La consultation affiche l&rsquo;état nominal.
             </p>
           )}
           {entrees?.map((e) => (
@@ -459,9 +487,21 @@ export function Admin() {
                       onClick={() => {
                         setEditionId(editionId === e.id ? null : e.id);
                         setSuppressionId(null);
+                        setRetourId(null);
                       }}
                     >
                       {editionId === e.id ? 'Fermer' : 'Modifier'}
+                    </button>
+                    <button
+                      className="btn btn-primary"
+                      type="button"
+                      onClick={() => {
+                        setRetourId(retourId === e.id ? null : e.id);
+                        setEditionId(null);
+                        setSuppressionId(null);
+                      }}
+                    >
+                      Retour à la normale
                     </button>
                     <button
                       className="btn btn-danger"
@@ -469,6 +509,7 @@ export function Admin() {
                       onClick={() => {
                         setSuppressionId(suppressionId === e.id ? null : e.id);
                         setEditionId(null);
+                        setRetourId(null);
                       }}
                     >
                       Supprimer
@@ -481,6 +522,39 @@ export function Admin() {
                 Signalé le {monte ? formatDateHeure(e.signale_le) : '…'} · dernière
                 modification le {monte ? formatDateHeure(e.maj_le) : '…'}
               </div>
+
+              {retourId === e.id && (
+                <div className="confirm-retour" role="alertdialog">
+                  <span>
+                    Confirmer le retour à la normale de « {e.analyse} » ?
+                    L&rsquo;alerte sera retirée immédiatement de la consultation.
+                  </span>
+                  <button
+                    className="btn btn-primary"
+                    type="button"
+                    disabled={enCours}
+                    onClick={async () => {
+                      const ok = await appelApi('DELETE', { id: e.id });
+                      if (ok) {
+                        setRetourId(null);
+                        signaler({
+                          genre: 'ok',
+                          texte: `« ${e.analyse} » est revenu à la normale — alerte retirée de la consultation.`,
+                        });
+                      }
+                    }}
+                  >
+                    Confirmer le retour à la normale
+                  </button>
+                  <button
+                    className="btn"
+                    type="button"
+                    onClick={() => setRetourId(null)}
+                  >
+                    Annuler
+                  </button>
+                </div>
+              )}
 
               {suppressionId === e.id && (
                 <div className="confirm-suppr" role="alertdialog">
@@ -533,6 +607,7 @@ export function Admin() {
             </div>
           ))}
         </section>
+        )}
       </main>
 
       <footer className="foot">

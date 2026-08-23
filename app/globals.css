@@ -294,6 +294,63 @@ footer.foot .mention { font-size: var(--cerba-text-xs); max-width: 440px; }
 .admin-item .note { font-size: var(--cerba-text-sm); color: var(--cerba-muted); margin-top: 6px; }
 .admin-edit { margin-top: var(--cerba-space-4); border-top: 1px solid var(--cerba-border); padding-top: var(--cerba-space-4); }
 
+/* ---------- Menu d'administration (Signaler / Alertes en cours) ---------- */
+.menu-admin {
+  display: flex; gap: 22px; flex-wrap: wrap;
+  border-bottom: 1px solid var(--cerba-border);
+  margin-bottom: var(--cerba-space-6);
+}
+.menu-admin button {
+  font-family: inherit; font-size: 15px; cursor: pointer;
+  background: none; border: none; color: var(--cerba-muted);
+  padding: 10px 2px 13px; position: relative;
+  display: inline-flex; align-items: center; gap: 8px;
+  transition: color .15s ease;
+}
+.menu-admin button:hover { color: var(--cerba-blue-primary); }
+.menu-admin button.active {
+  color: var(--cerba-blue-primary);
+  font-weight: var(--cerba-weight-bold);
+}
+/* Trait de pinceau sous l'onglet actif — même geste que les titres. */
+.menu-admin button.active::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -1px;
+  height: 5px; border-radius: 3px 5px 2px 4px;
+  background: linear-gradient(
+    100deg,
+    var(--cerba-blue-primary) 0%,
+    color-mix(in srgb, var(--cerba-blue-primary) 65%, transparent) 60%,
+    color-mix(in srgb, var(--cerba-blue-primary) 85%, transparent) 82%,
+    transparent 100%
+  );
+  transform-origin: left;
+  animation: pinceau-trait .45s cubic-bezier(.25, .6, .3, 1) both;
+}
+@keyframes pinceau-trait {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+.menu-count {
+  font-size: 11.5px; font-weight: var(--cerba-weight-bold);
+  min-width: 21px; padding: 2px 7px; border-radius: 999px; text-align: center;
+  background: var(--cerba-surface-alt); color: var(--cerba-blue-primary);
+}
+.menu-admin button.active .menu-count {
+  background: var(--cerba-blue-primary); color: #FFFFFF;
+}
+
+/* Confirmation « retour à la normale » : cadre positif, non alarmant. */
+.confirm-retour {
+  margin-top: var(--cerba-space-3); padding: 10px 14px;
+  background: var(--cerba-surface-alt); border: 1px solid var(--cerba-blue-primary);
+  border-radius: var(--cerba-radius-sm); font-size: var(--cerba-text-sm);
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  animation: entree-item .3s ease both;
+}
+
+/* Compteur à zéro du dashboard : présent mais en retrait. */
+.tally-zero { opacity: .5; }
+
 .confirm-suppr {
   margin-top: var(--cerba-space-3); padding: 10px 14px;
   background: #FBEFEE; border: 1px solid var(--statut-indisponible);
@@ -404,20 +461,29 @@ footer.foot .mention { font-size: var(--cerba-text-xs); max-width: 440px; }
    à droite, comme un passage de brosse sous le mot. */
 .cerba-title__accent {
   position: relative;
-  background-image: linear-gradient(
-    100deg,
-    color-mix(in srgb, var(--cerba-blue-primary) 26%, transparent) 0%,
-    color-mix(in srgb, var(--cerba-blue-primary) 14%, transparent) 55%,
-    color-mix(in srgb, var(--cerba-blue-primary) 22%, transparent) 78%,
-    transparent 100%
-  );
-  background-repeat: no-repeat;
-  background-position: 0 88%;
-  background-size: 0% 0.24em;
+  /* Deux passages superposés, épais et légèrement décalés, pour la matière. */
+  background-image:
+    linear-gradient(
+      100deg,
+      color-mix(in srgb, var(--cerba-blue-primary) 42%, transparent) 0%,
+      color-mix(in srgb, var(--cerba-blue-primary) 24%, transparent) 45%,
+      color-mix(in srgb, var(--cerba-blue-primary) 36%, transparent) 72%,
+      color-mix(in srgb, var(--cerba-blue-primary) 12%, transparent) 94%,
+      transparent 100%
+    ),
+    linear-gradient(
+      95deg,
+      color-mix(in srgb, var(--cerba-blue-primary) 18%, transparent) 0%,
+      color-mix(in srgb, var(--cerba-blue-primary) 10%, transparent) 70%,
+      transparent 96%
+    );
+  background-repeat: no-repeat, no-repeat;
+  background-position: 0 76%, 3% 96%;
+  background-size: 0% 0.5em, 0% 0.32em;
   animation: pinceau-souligne .7s cubic-bezier(.25, .6, .3, 1) .15s both;
 }
 @keyframes pinceau-souligne {
-  to { background-size: 100% 0.24em; }
+  to { background-size: 100% 0.5em, 97% 0.32em; }
 }
 
 /* Entrée des cartes : léger glissement + dépôt progressif, en cascade. */
@@ -471,7 +537,7 @@ footer.foot .mention { font-size: var(--cerba-text-xs); max-width: 440px; }
     animation-iteration-count: 1 !important;
     transition-duration: .01ms !important;
   }
-  .cerba-title__accent { background-size: 100% 0.24em; }
+  .cerba-title__accent { background-size: 100% 0.5em, 97% 0.32em; }
 }
 
 @media (max-width: 600px) {
