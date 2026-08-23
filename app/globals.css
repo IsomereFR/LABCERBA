@@ -240,6 +240,39 @@ footer.foot .mention { font-size: var(--cerba-text-xs); max-width: 440px; }
 .gate .card {
   border: 1px solid var(--cerba-border); border-radius: var(--cerba-radius-sm);
   padding: var(--cerba-space-6);
+  animation: gate-pose .55s cubic-bezier(.25, .6, .3, 1) .25s both;
+}
+
+/* ---------- Animation transitoire du logo (portillons Admin & Démo) ----------
+   Le logo se pose en fondu, puis le coup de pinceau le traverse par derrière —
+   même gestuelle que les titres. Le logo officiel reste intact (ni recoloré,
+   ni déformé) : seul son conteneur est animé. */
+.gate-brand { display: flex; justify-content: center; margin-bottom: 22px; }
+.gate-logo {
+  position: relative; display: inline-block; isolation: isolate;
+  animation: gate-logo-pose .7s cubic-bezier(.25, .6, .3, 1) both;
+}
+.gate-logo .logo-cerba { width: 108px; }
+.gate-logo .pinceau {
+  left: -30px; right: -38px; top: 50%; height: 88px;
+  animation-delay: .45s;
+}
+@keyframes gate-logo-pose {
+  from { opacity: 0; transform: translateY(12px) scale(.92); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes gate-pose {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+.gate-retour { margin-top: var(--cerba-space-4); font-size: 13px; }
+.gate-retour a { color: var(--cerba-blue-primary); text-decoration: none; }
+.gate-retour a:hover { text-decoration: underline; }
+
+/* Bouton de retour vers la consultation (en-tête admin) */
+.btn-retour {
+  display: inline-flex; align-items: center; gap: 6px;
+  text-decoration: none; white-space: nowrap;
 }
 .gate .cerba-title { font-size: var(--cerba-text-lg); margin-bottom: 6px; }
 .gate p.sub { font-size: var(--cerba-text-sm); color: var(--cerba-muted); margin-bottom: var(--cerba-space-4); }
@@ -388,6 +421,78 @@ footer.foot .mention { font-size: var(--cerba-text-xs); max-width: 440px; }
   float: right; font-size: 11.5px; color: var(--cerba-muted);
   background: var(--cerba-surface-alt); border-radius: 999px;
   padding: 1px 8px; margin-left: 10px;
+}
+
+/* ---------- Statistiques ---------- */
+.stats-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: var(--cerba-space-3); margin-bottom: var(--cerba-space-4);
+}
+.stat-tile {
+  border: 1px solid var(--cerba-border); border-radius: var(--cerba-radius-sm);
+  background: var(--cerba-surface-alt); padding: 14px 16px;
+  animation: entree-item .4s cubic-bezier(.25, .6, .3, 1) both;
+}
+.stat-tile:nth-child(2) { animation-delay: .05s; }
+.stat-tile:nth-child(3) { animation-delay: .1s; }
+.stat-tile:nth-child(4) { animation-delay: .15s; }
+.stat-tile:nth-child(5) { animation-delay: .2s; }
+.stat-tile:nth-child(n+6) { animation-delay: .25s; }
+.stat-tile .n {
+  font-size: 30px; line-height: 1.15; color: var(--cerba-blue-primary);
+  font-weight: var(--cerba-weight-regular);
+}
+.stat-tile .n.stat-duree { font-size: 21px; font-weight: var(--cerba-weight-bold); }
+.stat-tile .lbl { font-size: 12.5px; color: var(--cerba-muted); margin-top: 4px; }
+
+.stats-titre {
+  font-size: 15px; font-weight: var(--cerba-weight-bold); color: var(--cerba-ink);
+  margin: var(--cerba-space-6) 0 10px;
+}
+.stats-statuts { display: flex; flex-direction: column; gap: 8px; }
+.stat-statut {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  border: 1px solid var(--cerba-border); border-left: 4px solid var(--c);
+  border-radius: var(--cerba-radius-sm); padding: 9px 14px; font-size: 13.5px;
+}
+.stat-statut i {
+  width: 10px; height: 10px; border-radius: 50%; background: var(--c);
+  flex-shrink: 0; font-style: normal;
+}
+.stat-statut b { font-weight: var(--cerba-weight-bold); }
+.stat-statut-duree { margin-left: auto; color: var(--cerba-muted); }
+
+.stats-classement { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.stat-ligne {
+  border: 1px solid var(--cerba-border); border-radius: var(--cerba-radius-sm);
+  padding: 10px 14px 12px;
+}
+.stat-ligne-haut {
+  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+  font-size: 13.5px;
+}
+.stat-rang {
+  font-size: 11.5px; font-weight: var(--cerba-weight-bold);
+  min-width: 21px; padding: 2px 0; border-radius: 999px; text-align: center;
+  background: var(--cerba-surface-alt); color: var(--cerba-blue-primary);
+  align-self: center;
+}
+.stat-nom { font-weight: var(--cerba-weight-bold); }
+.stat-detail { margin-left: auto; font-size: 12.5px; color: var(--cerba-muted); }
+.stat-detail b { font-weight: var(--cerba-weight-bold); color: var(--cerba-ink); }
+.stat-barre {
+  height: 8px; border-radius: 999px; background: var(--cerba-surface-alt);
+  overflow: hidden; margin-top: 8px;
+}
+.stat-barre i {
+  display: block; height: 100%; border-radius: 999px;
+  background: linear-gradient(
+    100deg,
+    var(--cerba-blue-primary) 0%,
+    color-mix(in srgb, var(--cerba-blue-primary) 70%, transparent) 100%
+  );
+  transform-origin: left;
+  animation: pinceau-trait .55s cubic-bezier(.25, .6, .3, 1) .15s both;
 }
 
 /* ---------- Historique des incidents clos ---------- */
@@ -577,9 +682,96 @@ footer.foot .mention { font-size: var(--cerba-text-xs); max-width: 440px; }
   .pinceau { clip-path: inset(0 -3% 0 0); }
 }
 
+/* =====================================================================
+   Responsive — quatre gabarits :
+   smartphone ≤ 600px · tablette ≤ 900px · ordinateur (base) · grand écran ≥ 1400px
+   ===================================================================== */
+
+/* ---------- Tablette (≤ 900px) ---------- */
+@media (max-width: 900px) {
+  .wrap { padding: 0 var(--cerba-space-4); }
+  header.top { padding: 24px 0 20px; }
+  main.page { padding: 26px 0 34px; }
+  .admin-section { padding: var(--cerba-space-4); }
+  .menu-admin { gap: 18px; }
+  .band { padding: 20px 0; }
+  footer.foot .mention { max-width: none; }
+}
+
+/* ---------- Smartphone (≤ 600px) ---------- */
 @media (max-width: 600px) {
   .logo-cerba { width: 76px; }
+  header.top { padding: 18px 0 14px; gap: var(--cerba-space-3); }
   header.top .cerba-title { font-size: var(--cerba-text-lg); }
+  header.top .sub { font-size: 12.5px; }
+  .brand { gap: 14px; }
+  .live { font-size: 11.5px; padding: 7px 11px; }
+
+  .band { padding: 16px 0; }
+  .synth { gap: 14px; }
   .count .n { font-size: 36px; }
+  .tally { padding: 8px 11px; font-size: 12.5px; }
+
+  main.page { padding: 20px 0 28px; }
+  main.page .cerba-title { font-size: 19px; }
+  .item { padding: 14px 16px 13px; }
   .item .name { font-size: 15.5px; }
+  .item .note, .item .meta { padding-left: 0; }
+  .nominal { padding: 22px 16px; gap: 14px; }
+  .nominal strong { font-size: 16.5px; }
+
+  /* Onglets d'administration : défilement horizontal plutôt que repli. */
+  .menu-admin {
+    flex-wrap: nowrap; overflow-x: auto; gap: 16px;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  }
+  .menu-admin::-webkit-scrollbar { display: none; }
+  .menu-admin button { white-space: nowrap; flex-shrink: 0; }
+
+  /* Cartes d'alertes : actions empilées, boutons pleine largeur. */
+  .admin-item { padding: var(--cerba-space-3) 14px; }
+  .admin-item .row1 { flex-direction: column; align-items: stretch; gap: 10px; }
+  .admin-item .badges { row-gap: 8px; }
+  .admin-item .actions { width: 100%; }
+  .admin-item .actions .btn { flex: 1; text-align: center; }
+  .confirm-retour .btn, .confirm-suppr .btn { flex: 1; }
+
+  /* iOS zoome sur tout champ < 16px : on aligne la saisie dessus. */
+  .field input[type="text"], .field input[type="password"],
+  .field input[type="date"], .field textarea,
+  .recherche input, .selecteur input { font-size: 16px; }
+
+  footer.foot { flex-direction: column; gap: 8px; padding: 16px 0 26px; }
+  .gate { margin: var(--cerba-space-8) auto; }
+  .gate-logo .logo-cerba { width: 92px; }
+
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .stat-tile .n { font-size: 26px; }
+  .stat-statut-duree, .stat-detail { margin-left: 0; width: 100%; }
+}
+
+/* Écrans tactiles : cibles d'au moins ~44px, quel que soit le gabarit. */
+@media (pointer: coarse) {
+  .btn { padding: 11px 16px; }
+  .menu-admin button { padding: 12px 2px 15px; }
+  .chip { padding: 8px 15px; }
+  .sel-option { padding: 11px 12px; }
+  .sel-lettre { min-width: 30px; padding: 6px 0; }
+}
+
+/* ---------- Grand écran (≥ 1400px) ---------- */
+@media (min-width: 1400px) {
+  .wrap { max-width: 1140px; }
+  body { font-size: 17px; }
+  header.top { padding: 38px 0 32px; }
+  header.top .cerba-title { font-size: var(--cerba-text-2xl); }
+  .logo-cerba { width: 110px; }
+  .count .n { font-size: 56px; }
+  .band { padding: 32px 0; }
+  main.page { padding: 42px 0 52px; }
+  main.page .cerba-title { font-size: 25px; }
+  .item { padding: 20px 26px 18px; }
+  .item .name { font-size: 18px; }
+  .gate { max-width: 460px; }
+  .stats-grid { grid-template-columns: repeat(3, 1fr); }
 }

@@ -70,15 +70,19 @@ export function formatCourt(iso: string): string {
   return `${FMT_DATE.format(d)} ${FMT_HEURE.format(d)}`;
 }
 
-/** Durée d'un incident, en clair : « 3 jours », « 5 h », « moins d'une heure ». */
-export function formatDuree(debutIso: string, finIso: string): string {
-  const ms = new Date(finIso).getTime() - new Date(debutIso).getTime();
+/** Durée en clair : « 3 jours », « 5 h », « moins d'une heure ». */
+export function formatDureeMs(ms: number): string {
   if (!Number.isFinite(ms) || ms < 0) return '—';
   const heures = Math.floor(ms / 3_600_000);
   if (heures < 1) return 'moins d’une heure';
   if (heures < 24) return `${heures} h`;
   const jours = Math.round(heures / 24);
   return jours > 1 ? `${jours} jours` : '1 jour';
+}
+
+/** Durée d'un incident, en clair : « 3 jours », « 5 h », « moins d'une heure ». */
+export function formatDuree(debutIso: string, finIso: string): string {
+  return formatDureeMs(new Date(finIso).getTime() - new Date(debutIso).getTime());
 }
 
 /** Historique : les incidents clos, du plus récemment résolu au plus ancien. */
