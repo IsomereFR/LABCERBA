@@ -1,14 +1,20 @@
+import Image from 'next/image';
+
 /**
- * Emplacement du logo Cerba — designtokens.md §8.
- * Le SVG officiel n'a pas été récupéré et le logo n'est PAS redessiné.
- * L'attribut data-cerba-placeholder permet de retrouver et remplacer
- * cet emplacement d'un seul grep le jour où le fichier officiel est fourni.
+ * Logo Cerba officiel (designtokens.md §8).
+ * Fichier fourni par le client : public/logo-cerba.png (168×114, transparent).
+ * Le logo n'est PAS redessiné ni recomposé — l'image officielle est affichée
+ * telle quelle, à sa taille de référence (94×64), sur fond clair.
  */
 export function LogoSlot() {
   return (
-    <div className="logo-slot" data-cerba-placeholder="logo">
-      <b>logo Cerba</b>
-      SVG officiel à intégrer
-    </div>
+    <Image
+      className="logo-cerba"
+      src="/logo-cerba.png"
+      alt="Cerba"
+      width={94}
+      height={64}
+      priority
+    />
   );
 }

@@ -95,9 +95,10 @@ Non négociables tant que Cerba n'a pas validé le projet :
 Les valeurs visuelles proviennent du fichier de tokens (`designtokens.md` du
 dossier de conception) : **aucune n'a pu être extraite du site Cerba**, ce sont
 les valeurs de repli du brief, signalées comme telles en commentaire dans
-`app/globals.css`. Le logo officiel n'est pas redessiné (emplacement
-`data-cerba-placeholder="logo"`), le motif « coup de pinceau » n'est pas
-inventé (emplacement commenté). Les couleurs des trois statuts sont des
+`app/globals.css`. Le logo officiel a été fourni par le client et est intégré
+tel quel (`public/logo-cerba.png`, affiché par `app/components/LogoSlot.tsx`) :
+il n'est ni redessiné, ni recoloré, ni recomposé. Le motif « coup de pinceau »
+n'est toujours pas inventé (emplacement commenté). Les couleurs des trois statuts sont des
 couleurs **fonctionnelles provisoires hors charte**, toujours accompagnées
 d'un libellé texte (accessibilité daltonisme). Le motif identitaire des titres
 (un unique fragment en gras) est appliqué via `app/components/CerbaTitle.tsx`.
