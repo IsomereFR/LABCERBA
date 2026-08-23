@@ -15,6 +15,16 @@ laboratoires clients. Voir le PRD pour le contexte (ISO 15189:2022 §6.8.2).
 | **Consultation** | `/` | Lecture seule, temps réel. Phase proposition : protégée par `DEMO_PASSWORD`. |
 | **Administration** | `/admin` | Ajout / modification / suppression, protégée par `ADMIN_PASSWORD` (vérifié côté serveur à chaque écriture). |
 
+L'administration s'appuie sur le **catalogue complet des analyses**
+(`lib/catalogue-analyses.ts`, fichier généré depuis l'export CSV
+`catalogue_exams_fr` du 23/08/2026 — 2 755 lignes ramenées à 2 222 libellés
+uniques « Titre · Sous-titre ») : sélection par liste alphabétique avec index
+A–Z et recherche insensible aux accents, saisie libre possible pour une
+analyse hors catalogue. Le délai se saisit soit comme **date de retour à la
+normale** (calendrier), soit comme **délai approximatif** (suggestions
+contextualisées au statut), avec commentaire libre et aperçu en direct du
+rendu exact en consultation.
+
 En production, diffuser l'**alias stable** Vercel (ex.
 `https://<projet>.vercel.app/` et `https://<projet>.vercel.app/admin`), jamais
 l'URL de build propre à un déploiement.
