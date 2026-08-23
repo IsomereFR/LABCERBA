@@ -80,6 +80,10 @@ body {
   color: var(--cerba-ink);
   line-height: 1.25;
   letter-spacing: -.01em;
+  /* Contexte d'empilement posé sur le TITRE ENTIER : le pinceau (z-index
+     négatif) passe derrière tout le texte du titre — fragment accentué ET
+     mots voisins qu'il déborde — sans passer sous le fond de la page. */
+  isolation: isolate;
 }
 .cerba-title__accent {
   font-weight: var(--cerba-weight-bold);
@@ -87,9 +91,6 @@ body {
   position: relative;
   display: inline-block;
   max-width: 100%;
-  /* Contexte d'empilement : confine le pinceau (z-index négatif) derrière le
-     texte du fragment, sans le faire passer sous le fond de la page. */
-  isolation: isolate;
 }
 .cerba-title__mot { position: relative; z-index: 1; }
 .cerba-body strong { font-weight: var(--cerba-weight-bold); color: inherit; }
@@ -240,25 +241,42 @@ footer.foot .mention { font-size: var(--cerba-text-xs); max-width: 440px; }
 .gate .card {
   border: 1px solid var(--cerba-border); border-radius: var(--cerba-radius-sm);
   padding: var(--cerba-space-6);
-  animation: gate-pose .55s cubic-bezier(.25, .6, .3, 1) .25s both;
+  animation: gate-pose .55s cubic-bezier(.25, .6, .3, 1) .35s both;
 }
 
 /* ---------- Animation transitoire du logo (portillons Admin & Démo) ----------
-   Le logo se pose en fondu, puis le coup de pinceau le traverse par derrière —
-   même gestuelle que les titres. Le logo officiel reste intact (ni recoloré,
-   ni déformé) : seul son conteneur est animé. */
+   Le PNG officiel est affiché en deux calques découpés par clip-path :
+   la ROSACE de points de peinture entre en tournant autour de son centre
+   mesuré sur l'image (68.1 % / 45.3 %), puis le mot « Cerba » s'écrit en
+   fondu. Aucun pixel n'est redessiné ni recoloré. */
 .gate-brand { display: flex; justify-content: center; margin-bottom: 22px; }
-.gate-logo {
-  position: relative; display: inline-block; isolation: isolate;
-  animation: gate-logo-pose .7s cubic-bezier(.25, .6, .3, 1) both;
+.logo-anime {
+  position: relative; display: block;
+  width: 108px; aspect-ratio: 168 / 114;
 }
-.gate-logo .logo-cerba { width: 108px; }
-.gate-logo .pinceau {
-  left: -30px; right: -38px; top: 50%; height: 88px;
-  animation-delay: .45s;
+.logo-calque {
+  position: absolute; inset: 0; width: 100%; height: 100%; display: block;
 }
-@keyframes gate-logo-pose {
-  from { opacity: 0; transform: translateY(12px) scale(.92); }
+/* Rosace : tout le PNG sauf le rectangle bas-gauche du mot « Cerba ».
+   La découpe tourne avec le calque : les points ne sont jamais rognés. */
+.logo-points {
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 51% 100%, 51% 76%, 0 76%);
+  transform-origin: 68.1% 45.3%;
+  animation: logo-points-rotation 1.15s cubic-bezier(.3, .7, .25, 1) both;
+}
+/* Mot « Cerba » : rectangle bas-gauche uniquement. */
+.logo-texte {
+  clip-path: inset(76% 49% 0 0);
+  animation: logo-texte-pose .5s ease-out .6s both;
+}
+@keyframes logo-points-rotation {
+  0%   { opacity: 0; transform: rotate(-170deg) scale(.55); }
+  30%  { opacity: 1; }
+  82%  { transform: rotate(5deg) scale(1.02); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes logo-texte-pose {
+  from { opacity: 0; transform: translateY(5px); }
   to   { opacity: 1; transform: none; }
 }
 @keyframes gate-pose {
@@ -612,9 +630,10 @@ footer.foot .mention { font-size: var(--cerba-text-xs); max-width: 440px; }
 .pinceau {
   position: absolute;
   z-index: -1;
-  /* Débord franc : le geste traverse le mot et le dépasse largement. */
-  left: -.62em;
-  right: -.78em;
+  /* Débord mesuré : le geste dépasse le mot sans envahir ses voisins —
+     l'attaque (gauche) reste courte, la sortie (droite) file davantage. */
+  left: -.3em;
+  right: -.55em;
   top: 50%;
   height: 1.72em;
   transform: translateY(-50%) rotate(-1.4deg);
@@ -743,7 +762,7 @@ footer.foot .mention { font-size: var(--cerba-text-xs); max-width: 440px; }
 
   footer.foot { flex-direction: column; gap: 8px; padding: 16px 0 26px; }
   .gate { margin: var(--cerba-space-8) auto; }
-  .gate-logo .logo-cerba { width: 92px; }
+  .logo-anime { width: 92px; }
 
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
   .stat-tile .n { font-size: 26px; }

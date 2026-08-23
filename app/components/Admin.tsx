@@ -18,7 +18,7 @@ import {
 } from '@/lib/types';
 import { calculerStatistiques } from '@/lib/stats';
 import { CerbaTitle } from './CerbaTitle';
-import { CoupDePinceau } from './CoupDePinceau';
+import { LogoAnime } from './LogoAnime';
 import { LogoSlot } from './LogoSlot';
 import { SelecteurAnalyse } from './SelecteurAnalyse';
 
@@ -376,13 +376,10 @@ export function Admin() {
   if (motDePasse === null) {
     return (
       <div className="gate">
-        {/* Logo Cerba en entrée de scène : pose en fondu, traversé par le
-            coup de pinceau — même gestuelle que les titres. */}
-        <div className="gate-brand" aria-hidden="true">
-          <span className="gate-logo">
-            <CoupDePinceau />
-            <LogoSlot />
-          </span>
+        {/* Logo Cerba en entrée de scène : la rosace de points de peinture
+            tourne et se dépose, puis le mot « Cerba » s'écrit en fondu. */}
+        <div className="gate-brand">
+          <LogoAnime />
         </div>
         <div className="card">
           <CerbaTitle before="Accès" accent="administration" />

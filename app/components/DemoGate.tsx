@@ -3,8 +3,7 @@
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CerbaTitle } from './CerbaTitle';
-import { CoupDePinceau } from './CoupDePinceau';
-import { LogoSlot } from './LogoSlot';
+import { LogoAnime } from './LogoAnime';
 
 /**
  * Portillon du verrou de démonstration (phase proposition, PRD §5.1).
@@ -42,13 +41,10 @@ export function DemoGate() {
 
   return (
     <div className="gate">
-      {/* Logo Cerba en entrée de scène : pose en fondu, traversé par le coup
-          de pinceau — même gestuelle que les titres. */}
-      <div className="gate-brand" aria-hidden="true">
-        <span className="gate-logo">
-          <CoupDePinceau />
-          <LogoSlot />
-        </span>
+      {/* Logo Cerba en entrée de scène : la rosace de points de peinture
+          tourne et se dépose, puis le mot « Cerba » s'écrit en fondu. */}
+      <div className="gate-brand">
+        <LogoAnime />
       </div>
       <div className="card">
         <CerbaTitle before="Accès à la" accent="démonstration" />
