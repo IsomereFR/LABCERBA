@@ -5,7 +5,8 @@
 -- À exécuter dans le SQL Editor Supabase, après la migration.
 -- ============================================================================
 
-insert into public.analyses_impactees (analyse, statut, delai, commentaire)
+-- « analyse » entre guillemets : mot réservé PostgreSQL (voir la migration).
+insert into public.analyses_impactees ("analyse", statut, delai, commentaire)
 values
   (
     'Sérologie de Lyme · immunoblot',

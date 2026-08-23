@@ -121,7 +121,7 @@ d'un libellé texte (accessibilité daltonisme). Le motif identitaire des titres
 | Colonne | Type | Notes |
 |---|---|---|
 | `id` | uuid | PK, `gen_random_uuid()` |
-| `analyse` | text | obligatoire |
+| `analyse` | text | obligatoire — **à écrire `"analyse"` en SQL** : mot réservé PostgreSQL (orthographe britannique d'`ANALYZE`). Sans guillemets, `syntax error at or near "analyse"`. Le nom stocké reste `analyse`, et PostgREST/supabase-js l'échappe seul : aucun code applicatif n'est concerné. |
 | `statut` | text | `indisponible` \| `anomalie` \| `retard` (CHECK) |
 | `delai` | text | optionnel, `''` par défaut |
 | `commentaire` | text | optionnel, `''` par défaut |
