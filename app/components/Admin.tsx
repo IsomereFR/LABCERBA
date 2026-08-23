@@ -1,6 +1,7 @@
 'use client';
 
-import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import { chargerEntrees } from '@/lib/supabase-browser';
 import {
   DELAI_LABEL,
@@ -11,10 +12,13 @@ import {
   estActive,
   formatDateHeure,
   formatDuree,
+  formatDureeMs,
   trierParGravite,
   trierParResolution,
 } from '@/lib/types';
+import { calculerStatistiques } from '@/lib/stats';
 import { CerbaTitle } from './CerbaTitle';
+import { CoupDePinceau } from './CoupDePinceau';
 import { LogoSlot } from './LogoSlot';
 import { SelecteurAnalyse } from './SelecteurAnalyse';
 
@@ -279,9 +283,9 @@ export function Admin() {
   const [entrees, setEntrees] = useState<Entree[] | null>(null);
   const [flash, setFlash] = useState<Flash>(null);
   const [enCours, setEnCours] = useState(false);
-  const [onglet, setOnglet] = useState<'signaler' | 'alertes' | 'historique'>(
-    'signaler',
-  );
+  const [onglet, setOnglet] = useState<
+    'signaler' | 'alertes' | 'historique' | 'stats'
+  >('signaler');
   const [editionId, setEditionId] = useState<string | null>(null);
   const [suppressionId, setSuppressionId] = useState<string | null>(null);
   const [retourId, setRetourId] = useState<string | null>(null);
@@ -310,6 +314,13 @@ export function Admin() {
   useEffect(() => {
     if (motDePasse !== null) recharger();
   }, [motDePasse, recharger]);
+
+  // Agrégats de l'onglet Statistiques, recalculés à chaque rechargement des
+  // entrées. Rendu côté client uniquement (après login) : pas d'hydratation.
+  const stats = useMemo(
+    () => (entrees === null ? null : calculerStatistiques(entrees)),
+    [entrees],
+  );
 
   async function ouvrirSession(e: FormEvent) {
     e.preventDefault();
@@ -365,6 +376,14 @@ export function Admin() {
   if (motDePasse === null) {
     return (
       <div className="gate">
+        {/* Logo Cerba en entrée de scène : pose en fondu, traversé par le
+            coup de pinceau — même gestuelle que les titres. */}
+        <div className="gate-brand" aria-hidden="true">
+          <span className="gate-logo">
+            <CoupDePinceau />
+            <LogoSlot />
+          </span>
+        </div>
         <div className="card">
           <CerbaTitle before="Accès" accent="administration" />
           <p className="sub">
@@ -388,6 +407,9 @@ export function Admin() {
             </button>
             {erreurAcces && <p className="erreur" role="alert">{erreurAcces}</p>}
           </form>
+          <p className="gate-retour">
+            <Link href="/">← Retour à la page de consultation</Link>
+          </p>
         </div>
       </div>
     );
@@ -406,10 +428,13 @@ export function Admin() {
           <div>
             <CerbaTitle as="h1" before="Administration du" accent="suivi de production" />
             <div className="sub">
-              Signalements, alertes en cours et historique des incidents
+              Signalements, alertes en cours, historique et statistiques
             </div>
           </div>
         </div>
+        <Link className="btn btn-retour" href="/">
+          ← Page de consultation
+        </Link>
       </header>
 
       <main className="page" style={{ paddingTop: 0 }}>
@@ -448,6 +473,14 @@ export function Admin() {
                 {closes.length}
               </span>
             )}
+          </button>
+          <button
+            type="button"
+            className={onglet === 'stats' ? 'active' : ''}
+            aria-current={onglet === 'stats' ? 'page' : undefined}
+            onClick={() => setOnglet('stats')}
+          >
+            Statistiques
           </button>
         </nav>
 
@@ -695,6 +728,137 @@ export function Admin() {
               </div>
             </div>
           ))}
+        </section>
+        )}
+
+        {onglet === 'stats' && (
+        <section className="admin-section">
+          <CerbaTitle before="Statistiques des" accent="incidents" />
+          <p className="hint" style={{ marginBottom: 16 }}>
+            Vue d&rsquo;ensemble calculée sur tous les signalements — alertes en
+            cours et incidents clos. Pour les alertes en cours, la durée est
+            comptée depuis le signalement jusqu&rsquo;à maintenant.
+          </p>
+          {stats === null && <p className="hint">Chargement…</p>}
+          {stats !== null && stats.total === 0 && (
+            <p className="hint">
+              Aucun signalement enregistré pour le moment : les statistiques
+              apparaîtront dès la première publication.
+            </p>
+          )}
+          {stats !== null && stats.total > 0 && (
+            <>
+              <div className="stats-grid">
+                <div className="stat-tile">
+                  <div className="n">{stats.total}</div>
+                  <div className="lbl">
+                    incident{stats.total > 1 ? 's' : ''} signalé
+                    {stats.total > 1 ? 's' : ''} au total
+                  </div>
+                </div>
+                <div className="stat-tile">
+                  <div className="n">{stats.actifs}</div>
+                  <div className="lbl">
+                    alerte{stats.actifs > 1 ? 's' : ''} en cours
+                  </div>
+                </div>
+                <div className="stat-tile">
+                  <div className="n">{stats.clos}</div>
+                  <div className="lbl">
+                    incident{stats.clos > 1 ? 's' : ''} résolu
+                    {stats.clos > 1 ? 's' : ''}
+                  </div>
+                </div>
+                <div className="stat-tile">
+                  <div className="n stat-duree">
+                    {stats.dureeMoyenneResolution !== null
+                      ? formatDureeMs(stats.dureeMoyenneResolution)
+                      : '—'}
+                  </div>
+                  <div className="lbl">durée moyenne de résolution (incidents clos)</div>
+                </div>
+                <div className="stat-tile">
+                  <div className="n stat-duree">
+                    {stats.ancienneteMoyenneActives !== null
+                      ? formatDureeMs(stats.ancienneteMoyenneActives)
+                      : '—'}
+                  </div>
+                  <div className="lbl">ancienneté moyenne des alertes en cours</div>
+                </div>
+                {stats.plusLong && (
+                  <div className="stat-tile">
+                    <div className="n stat-duree">{formatDureeMs(stats.plusLong.duree)}</div>
+                    <div className="lbl">
+                      incident le plus long — {stats.plusLong.analyse}
+                      {stats.plusLong.enCours ? ' (en cours)' : ''}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <h3 className="stats-titre">Répartition par statut</h3>
+              <div className="stats-statuts">
+                {stats.parStatut.map((s) => (
+                  <div
+                    className="stat-statut"
+                    key={s.statut}
+                    style={{ ['--c' as string]: `var(--statut-${s.statut})` }}
+                  >
+                    <i aria-hidden="true" />
+                    <b>{STATUT_LABEL[s.statut]}</b>
+                    <span>
+                      {s.nb} incident{s.nb > 1 ? 's' : ''}
+                    </span>
+                    <span className="stat-statut-duree">
+                      {s.dureeMoyenne !== null ? (
+                        <>
+                          immobilisation moyenne : <b>{formatDureeMs(s.dureeMoyenne)}</b>
+                        </>
+                      ) : (
+                        'aucun incident'
+                      )}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <h3 className="stats-titre">Analyses les plus impactées</h3>
+              <ol className="stats-classement">
+                {stats.parAnalyse.slice(0, 8).map((a, i) => (
+                  <li className="stat-ligne" key={a.analyse}>
+                    <div className="stat-ligne-haut">
+                      <span className="stat-rang" aria-hidden="true">
+                        {i + 1}
+                      </span>
+                      <span className="stat-nom">{a.analyse}</span>
+                      <span className="stat-detail">
+                        <b>{a.incidents}</b> incident{a.incidents > 1 ? 's' : ''}
+                        {a.actifs > 0 && <> · {a.actifs} en cours</>} ·
+                        immobilisation cumulée <b>{formatDureeMs(a.dureeCumulee)}</b>
+                      </span>
+                    </div>
+                    <div className="stat-barre" aria-hidden="true">
+                      <i
+                        style={{
+                          width: `${Math.round(
+                            (a.incidents / stats.parAnalyse[0].incidents) * 100,
+                          )}%`,
+                        }}
+                      />
+                    </div>
+                  </li>
+                ))}
+              </ol>
+              {stats.parAnalyse.length > 8 && (
+                <p className="hint">
+                  … et {stats.parAnalyse.length - 8} autre
+                  {stats.parAnalyse.length - 8 > 1 ? 's' : ''} analyse
+                  {stats.parAnalyse.length - 8 > 1 ? 's' : ''} impactée
+                  {stats.parAnalyse.length - 8 > 1 ? 's' : ''}.
+                </p>
+              )}
+            </>
+          )}
         </section>
         )}
       </main>
