@@ -13,8 +13,33 @@ import {
 } from '@/lib/types';
 import { CerbaTitle } from './CerbaTitle';
 import { LogoSlot } from './LogoSlot';
+import { SelecteurAnalyse } from './SelecteurAnalyse';
 
 type Flash = { genre: 'ok' | 'ko'; texte: string } | null;
+
+/** Saisie du délai : date de retour précise, ou délai approximatif en texte. */
+type ModeDelai = 'date' | 'texte';
+
+/** Suggestions de délai approximatif, contextualisées au statut. */
+const SUGGESTIONS_DELAI: Record<Statut, string[]> = {
+  retard: ['+24 h', '+48 h', '+3 jours ouvrés', '+5 jours ouvrés', '+1 semaine'],
+  indisponible: ['sous 48 h', 'sous 1 semaine', 'à confirmer'],
+  anomalie: ['suspendu', 'suspendu · recalibration en cours'],
+};
+
+/**
+ * Compose le texte du badge à partir d'une date de retour à la normale,
+ * de sorte qu'il se lise naturellement derrière le préfixe DELAI_LABEL :
+ * « Reprise estimée le 04/09 », « Délai estimé jusqu'au 04/09 »,
+ * « Rendu suspendu · retour prévu le 04/09 ».
+ */
+function delaiDepuisDate(statut: Statut, isoDate: string): string {
+  const [a, m, j] = isoDate.split('-');
+  const date = `${j}/${m}/${a}`;
+  if (statut === 'indisponible') return `le ${date}`;
+  if (statut === 'retard') return `jusqu'au ${date}`;
+  return `suspendu · retour prévu le ${date}`;
+}
 
 /** Consigne obligatoire, affichée au-dessus de chaque zone de commentaire. */
 function ConsignePatient() {
@@ -70,16 +95,31 @@ function FormulaireEntree({
 }) {
   const [analyse, setAnalyse] = useState(initial?.analyse ?? '');
   const [statut, setStatut] = useState<Statut>(initial?.statut ?? 'retard');
-  const [delai, setDelai] = useState(initial?.delai ?? '');
+  // En modification, le délai existant est du texte : on repart en mode texte
+  // pour ne rien perdre. En création, la date de retour est proposée d'abord.
+  const [modeDelai, setModeDelai] = useState<ModeDelai>(
+    initial?.delai ? 'texte' : 'date',
+  );
+  const [dateRetour, setDateRetour] = useState('');
+  const [delaiTexte, setDelaiTexte] = useState(initial?.delai ?? '');
   const [commentaire, setCommentaire] = useState(initial?.commentaire ?? '');
+
+  const delaiFinal =
+    modeDelai === 'date'
+      ? dateRetour
+        ? delaiDepuisDate(statut, dateRetour)
+        : ''
+      : delaiTexte.trim();
 
   function soumettre(e: FormEvent) {
     e.preventDefault();
-    onSubmit({ analyse, statut, delai, commentaire });
+    onSubmit({ analyse: analyse.trim(), statut, delai: delaiFinal, commentaire });
     if (!initial) {
       setAnalyse('');
       setStatut('retard');
-      setDelai('');
+      setModeDelai('date');
+      setDateRetour('');
+      setDelaiTexte('');
       setCommentaire('');
     }
   }
@@ -87,14 +127,15 @@ function FormulaireEntree({
   return (
     <form onSubmit={soumettre}>
       <div className="field">
-        <label htmlFor={`${prefixe}-analyse`}>Nom de l&rsquo;analyse</label>
-        <input
+        <label htmlFor={`${prefixe}-analyse`}>Analyse concernée</label>
+        <SelecteurAnalyse
           id={`${prefixe}-analyse`}
-          type="text"
           value={analyse}
-          onChange={(e) => setAnalyse(e.target.value)}
-          required
+          onChange={setAnalyse}
         />
+        <span className="hint">
+          Liste alphabétique du catalogue · recherche par mot, accents ignorés.
+        </span>
       </div>
 
       <div className="field">
@@ -104,25 +145,71 @@ function FormulaireEntree({
 
       <div className="field">
         {/* Libellé contextualisé au statut choisi (PRD §4.2) */}
-        <label htmlFor={`${prefixe}-delai`}>{DELAI_LABEL[statut]}</label>
-        <input
-          id={`${prefixe}-delai`}
-          type="text"
-          value={delai}
-          onChange={(e) => setDelai(e.target.value)}
-          placeholder={
-            statut === 'retard'
-              ? 'ex. +5 jours ouvrés'
-              : statut === 'indisponible'
-                ? 'ex. reprise estimée 04/08'
-                : 'ex. suspendu'
-          }
-        />
-        <span className="hint">Optionnel · texte court affiché en badge.</span>
+        <label>{DELAI_LABEL[statut]}</label>
+        <div className="mode-delai" role="radiogroup" aria-label="Type de délai">
+          <label>
+            <input
+              type="radio"
+              name={`${prefixe}-mode-delai`}
+              checked={modeDelai === 'date'}
+              onChange={() => setModeDelai('date')}
+            />
+            Date de retour à la normale
+          </label>
+          <label>
+            <input
+              type="radio"
+              name={`${prefixe}-mode-delai`}
+              checked={modeDelai === 'texte'}
+              onChange={() => setModeDelai('texte')}
+            />
+            Délai approximatif
+          </label>
+        </div>
+
+        {modeDelai === 'date' ? (
+          <input
+            id={`${prefixe}-delai-date`}
+            type="date"
+            aria-label="Date de retour à la normale prévue"
+            value={dateRetour}
+            onChange={(e) => setDateRetour(e.target.value)}
+          />
+        ) : (
+          <>
+            <input
+              id={`${prefixe}-delai`}
+              type="text"
+              aria-label="Délai approximatif"
+              value={delaiTexte}
+              onChange={(e) => setDelaiTexte(e.target.value)}
+              placeholder={
+                statut === 'retard'
+                  ? 'ex. +5 jours ouvrés'
+                  : statut === 'indisponible'
+                    ? 'ex. sous 1 semaine'
+                    : 'ex. suspendu'
+              }
+            />
+            <div className="chips" aria-label="Suggestions de délai">
+              {SUGGESTIONS_DELAI[statut].map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  className={`chip${delaiTexte === s ? ' active' : ''}`}
+                  onClick={() => setDelaiTexte(delaiTexte === s ? '' : s)}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+        <span className="hint">Optionnel · affiché en badge en consultation.</span>
       </div>
 
       <div className="field">
-        <label htmlFor={`${prefixe}-commentaire`}>Commentaire</label>
+        <label htmlFor={`${prefixe}-commentaire`}>Commentaire libre</label>
         <ConsignePatient />
         <textarea
           id={`${prefixe}-commentaire`}
@@ -131,6 +218,38 @@ function FormulaireEntree({
           placeholder="Motif technique et conduite à tenir. Optionnel."
         />
       </div>
+
+      {/* Aperçu en direct du rendu exact en consultation */}
+      {analyse.trim() && (
+        <div className="field apercu">
+          <label>Aperçu de la publication</label>
+          <div
+            className="item apercu-item"
+            style={{ ['--c' as string]: `var(--statut-${statut})` }}
+          >
+            <div className="row1">
+              <div className="name" style={{ fontSize: 15.5 }}>
+                <i style={{ background: `var(--statut-${statut})` }} aria-hidden="true" />{' '}
+                {analyse.trim()}
+              </div>
+              <div className="badges">
+                <span
+                  className="badge"
+                  style={{ ['--c' as string]: `var(--statut-${statut})` }}
+                >
+                  {STATUT_LABEL[statut]}
+                </span>
+                {delaiFinal && (
+                  <span className="delay">
+                    {DELAI_LABEL[statut]} <b>{delaiFinal}</b>
+                  </span>
+                )}
+              </div>
+            </div>
+            {commentaire.trim() && <div className="note">{commentaire.trim()}</div>}
+          </div>
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: 8 }}>
         <button className="btn btn-primary" type="submit" disabled={enCours}>

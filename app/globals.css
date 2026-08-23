@@ -198,7 +198,8 @@ footer.foot .mention { font-size: var(--cerba-text-xs); max-width: 440px; }
 /* ---------- Formulaires (portillons + admin) ---------- */
 .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: var(--cerba-space-4); }
 .field label { font-size: 13px; font-weight: var(--cerba-weight-bold); color: var(--cerba-ink); }
-.field input[type="text"], .field input[type="password"], .field textarea {
+.field input[type="text"], .field input[type="password"],
+.field input[type="date"], .field textarea {
   font-family: inherit; font-size: var(--cerba-text-sm);
   border: 1px solid var(--cerba-border); border-radius: var(--cerba-radius-sm);
   padding: 9px 12px; color: var(--cerba-ink); background: var(--cerba-surface);
@@ -298,6 +299,179 @@ footer.foot .mention { font-size: var(--cerba-text-xs); max-width: 440px; }
   background: #FBEFEE; border: 1px solid var(--statut-indisponible);
   border-radius: var(--cerba-radius-sm); font-size: var(--cerba-text-sm);
   display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+}
+
+/* ---------- Sélecteur d'analyse (catalogue complet) ---------- */
+.selecteur { position: relative; }
+.selecteur input {
+  width: 100%;
+  font-family: inherit; font-size: var(--cerba-text-sm);
+  border: 1px solid var(--cerba-border); border-radius: var(--cerba-radius-sm);
+  padding: 9px 36px 9px 12px; color: var(--cerba-ink); background: var(--cerba-surface);
+}
+.selecteur input:focus { outline: 2px solid var(--cerba-blue-primary); outline-offset: 1px; }
+.sel-fleche {
+  position: absolute; top: 0; right: 0; height: 100%; width: 34px;
+  border: none; background: none; cursor: pointer;
+  color: var(--cerba-blue-primary); font-size: 13px;
+}
+.sel-panneau {
+  position: absolute; z-index: 30; top: calc(100% + 4px); left: 0; right: 0;
+  background: var(--cerba-surface);
+  border: 1px solid var(--cerba-border); border-radius: var(--cerba-radius-sm);
+  box-shadow: 0 10px 28px rgba(27, 43, 58, .14);
+  animation: deroule .18s ease both;
+  transform-origin: top;
+}
+.sel-lettres {
+  display: flex; flex-wrap: wrap; gap: 3px;
+  padding: 8px 10px; border-bottom: 1px solid var(--cerba-border);
+}
+.sel-lettre {
+  font-family: inherit; font-size: 11.5px; cursor: pointer;
+  min-width: 24px; padding: 3px 0; text-align: center;
+  border: 1px solid transparent; border-radius: var(--cerba-radius-sm);
+  background: none; color: var(--cerba-blue-primary);
+  transition: background .15s ease, border-color .15s ease;
+}
+.sel-lettre:hover { border-color: var(--cerba-border); background: var(--cerba-surface-alt); }
+.sel-lettre.active {
+  background: var(--cerba-blue-primary); color: #FFFFFF;
+  border-color: var(--cerba-blue-primary); font-weight: var(--cerba-weight-bold);
+}
+.sel-liste {
+  list-style: none; max-height: 288px; overflow-y: auto; overscroll-behavior: contain;
+}
+.sel-option {
+  font-size: 13.5px; padding: 8px 12px; cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: background .12s ease, border-color .12s ease;
+}
+.sel-option.active { background: var(--cerba-surface-alt); border-left-color: var(--cerba-blue-primary); }
+.sel-option[aria-selected="true"] { font-weight: var(--cerba-weight-bold); color: var(--cerba-blue-primary); }
+.sel-libre { font-style: italic; color: var(--cerba-muted); border-top: 1px dashed var(--cerba-border); }
+.sel-vide { font-size: 13.5px; padding: 12px; color: var(--cerba-muted); }
+.sel-pied {
+  font-size: var(--cerba-text-xs); color: var(--cerba-muted);
+  padding: 7px 12px; border-top: 1px solid var(--cerba-border);
+  background: var(--cerba-surface-alt);
+  border-radius: 0 0 var(--cerba-radius-sm) var(--cerba-radius-sm);
+}
+
+/* ---------- Choix du type de délai + suggestions ---------- */
+.mode-delai { display: flex; gap: 9px; flex-wrap: wrap; margin-bottom: 4px; }
+.mode-delai label {
+  display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+  border: 1px solid var(--cerba-border); border-radius: var(--cerba-radius-sm);
+  padding: 7px 13px; font-size: 13px; font-weight: var(--cerba-weight-regular);
+  transition: border-color .15s ease, background .15s ease;
+}
+.mode-delai label:has(input:checked) {
+  border-color: var(--cerba-blue-primary);
+  background: var(--cerba-surface-alt);
+  font-weight: var(--cerba-weight-bold);
+}
+.mode-delai input { accent-color: var(--cerba-blue-primary); }
+
+.chips { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 7px; }
+.chip {
+  font-family: inherit; font-size: 12.5px; cursor: pointer;
+  border: 1px solid var(--cerba-border); border-radius: 999px;
+  background: var(--cerba-surface); color: var(--cerba-blue-primary);
+  padding: 5px 13px;
+  transition: background .15s ease, border-color .15s ease,
+              color .15s ease, transform .15s ease;
+}
+.chip:hover { border-color: var(--cerba-blue-primary); transform: translateY(-1px); }
+.chip.active {
+  background: var(--cerba-blue-primary); color: #FFFFFF;
+  border-color: var(--cerba-blue-primary);
+}
+
+/* ---------- Aperçu en direct de la publication ---------- */
+.apercu > label { color: var(--cerba-muted); }
+.apercu-item { animation: entree-item .35s ease both; }
+
+/* =====================================================================
+   Animations — évocation « coup de pinceau » de la DA Cerba.
+   Volontairement abstraites (balayages de matière translucide) : les SVG
+   officiels du motif n'ont pas été récupérés et ne sont PAS redessinés
+   (designtokens.md §9) ; seule la gestuelle du geste de pinceau — un
+   passage latéral qui dépose la couleur — est reprise, sobrement.
+   ===================================================================== */
+
+/* Le fragment accentué des titres reçoit un soulignement déposé de gauche
+   à droite, comme un passage de brosse sous le mot. */
+.cerba-title__accent {
+  position: relative;
+  background-image: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--cerba-blue-primary) 26%, transparent) 0%,
+    color-mix(in srgb, var(--cerba-blue-primary) 14%, transparent) 55%,
+    color-mix(in srgb, var(--cerba-blue-primary) 22%, transparent) 78%,
+    transparent 100%
+  );
+  background-repeat: no-repeat;
+  background-position: 0 88%;
+  background-size: 0% 0.24em;
+  animation: pinceau-souligne .7s cubic-bezier(.25, .6, .3, 1) .15s both;
+}
+@keyframes pinceau-souligne {
+  to { background-size: 100% 0.24em; }
+}
+
+/* Entrée des cartes : léger glissement + dépôt progressif, en cascade. */
+.item, .admin-item { animation: entree-item .45s cubic-bezier(.25, .6, .3, 1) both; }
+.list .item:nth-child(2), .admin-item:nth-of-type(2) { animation-delay: .06s; }
+.list .item:nth-child(3), .admin-item:nth-of-type(3) { animation-delay: .12s; }
+.list .item:nth-child(4), .admin-item:nth-of-type(4) { animation-delay: .18s; }
+.list .item:nth-child(5), .admin-item:nth-of-type(5) { animation-delay: .24s; }
+.list .item:nth-child(n+6), .admin-item:nth-of-type(n+6) { animation-delay: .3s; }
+@keyframes entree-item {
+  from { opacity: 0; transform: translateX(-14px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Messages de retour : glissement + trait de brosse qui traverse une fois. */
+.flash {
+  position: relative; overflow: hidden;
+  animation: entree-item .35s ease both;
+}
+.flash::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(
+    100deg, transparent 0%,
+    rgba(255, 255, 255, .55) 45%, rgba(255, 255, 255, 0) 65%
+  );
+  transform: translateX(-101%);
+  animation: pinceau-balayage .9s cubic-bezier(.3, .5, .2, 1) .1s both;
+}
+@keyframes pinceau-balayage {
+  to { transform: translateX(101%); }
+}
+
+/* Déroulé du panneau de sélection. */
+@keyframes deroule {
+  from { opacity: 0; transform: scaleY(.96) translateY(-4px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Boutons et pastille temps réel : transitions douces + pulsation discrète. */
+.btn { transition: background .15s ease, border-color .15s ease, color .15s ease; }
+.live i { animation: pulsation 2.4s ease-in-out infinite; }
+@keyframes pulsation {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: .35; }
+}
+
+/* Accessibilité : aucune animation si l'utilisateur les refuse. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+  .cerba-title__accent { background-size: 100% 0.24em; }
 }
 
 @media (max-width: 600px) {
