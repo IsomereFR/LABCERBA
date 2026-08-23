@@ -8,8 +8,11 @@ import {
   STATUTS,
   STATUT_LABEL,
   Statut,
+  estActive,
   formatDateHeure,
+  formatDuree,
   trierParGravite,
+  trierParResolution,
 } from '@/lib/types';
 import { CerbaTitle } from './CerbaTitle';
 import { LogoSlot } from './LogoSlot';
@@ -276,7 +279,9 @@ export function Admin() {
   const [entrees, setEntrees] = useState<Entree[] | null>(null);
   const [flash, setFlash] = useState<Flash>(null);
   const [enCours, setEnCours] = useState(false);
-  const [onglet, setOnglet] = useState<'signaler' | 'alertes'>('signaler');
+  const [onglet, setOnglet] = useState<'signaler' | 'alertes' | 'historique'>(
+    'signaler',
+  );
   const [editionId, setEditionId] = useState<string | null>(null);
   const [suppressionId, setSuppressionId] = useState<string | null>(null);
   const [retourId, setRetourId] = useState<string | null>(null);
@@ -297,7 +302,9 @@ export function Admin() {
       signaler({ genre: 'ko', texte: `Chargement des alertes impossible — ${r.erreur}.` });
       return;
     }
-    setEntrees(trierParGravite(r.entrees));
+    // On conserve tout : l'onglet Alertes filtre les actives, l'Historique les
+    // incidents clos.
+    setEntrees(r.entrees);
   }, [signaler]);
 
   useEffect(() => {
@@ -386,6 +393,10 @@ export function Admin() {
     );
   }
 
+  const actives = entrees === null ? null : trierParGravite(entrees.filter(estActive));
+  const closes =
+    entrees === null ? null : trierParResolution(entrees.filter((e) => !estActive(e)));
+
   // ---------- Interface de gestion ----------
   return (
     <div className="wrap">
@@ -394,7 +405,9 @@ export function Admin() {
           <LogoSlot />
           <div>
             <CerbaTitle as="h1" before="Administration du" accent="suivi de production" />
-            <div className="sub">Ajout, modification et suppression des signalements</div>
+            <div className="sub">
+              Signalements, alertes en cours et historique des incidents
+            </div>
           </div>
         </div>
       </header>
@@ -417,9 +430,22 @@ export function Admin() {
             onClick={() => setOnglet('alertes')}
           >
             Alertes en cours
-            {entrees !== null && (
-              <span className="menu-count" aria-label={`${entrees.length} alerte(s)`}>
-                {entrees.length}
+            {actives !== null && (
+              <span className="menu-count" aria-label={`${actives.length} alerte(s)`}>
+                {actives.length}
+              </span>
+            )}
+          </button>
+          <button
+            type="button"
+            className={onglet === 'historique' ? 'active' : ''}
+            aria-current={onglet === 'historique' ? 'page' : undefined}
+            onClick={() => setOnglet('historique')}
+          >
+            Historique
+            {closes !== null && closes.length > 0 && (
+              <span className="menu-count" aria-label={`${closes.length} incident(s) clos`}>
+                {closes.length}
               </span>
             )}
           </button>
@@ -454,13 +480,13 @@ export function Admin() {
         {onglet === 'alertes' && (
         <section className="admin-section">
           <CerbaTitle before="Alertes" accent="en cours" />
-          {entrees === null && <p className="hint">Chargement…</p>}
-          {entrees !== null && entrees.length === 0 && (
+          {actives === null && <p className="hint">Chargement…</p>}
+          {actives !== null && actives.length === 0 && (
             <p className="hint">
               Aucune alerte en cours. La consultation affiche l&rsquo;état nominal.
             </p>
           )}
-          {entrees?.map((e) => (
+          {actives?.map((e) => (
             <div
               className="admin-item"
               key={e.id}
@@ -527,19 +553,20 @@ export function Admin() {
                 <div className="confirm-retour" role="alertdialog">
                   <span>
                     Confirmer le retour à la normale de « {e.analyse} » ?
-                    L&rsquo;alerte sera retirée immédiatement de la consultation.
+                    L&rsquo;alerte sera retirée immédiatement de la consultation
+                    et conservée dans l&rsquo;historique.
                   </span>
                   <button
                     className="btn btn-primary"
                     type="button"
                     disabled={enCours}
                     onClick={async () => {
-                      const ok = await appelApi('DELETE', { id: e.id });
+                      const ok = await appelApi('PATCH', { id: e.id, resolu: true });
                       if (ok) {
                         setRetourId(null);
                         signaler({
                           genre: 'ok',
-                          texte: `« ${e.analyse} » est revenu à la normale — alerte retirée de la consultation.`,
+                          texte: `« ${e.analyse} » est revenu à la normale — alerte retirée de la consultation, incident conservé dans l’historique.`,
                         });
                       }
                     }}
@@ -560,7 +587,9 @@ export function Admin() {
                 <div className="confirm-suppr" role="alertdialog">
                   <span>
                     Supprimer définitivement « {e.analyse} » ? L&rsquo;entrée
-                    disparaîtra immédiatement de la consultation.
+                    sera effacée sans laisser de trace dans l&rsquo;historique.
+                    À réserver aux saisies erronées : pour un incident résolu,
+                    utilisez « Retour à la normale ».
                   </span>
                   <button
                     className="btn btn-danger"
@@ -604,6 +633,66 @@ export function Admin() {
                   />
                 </div>
               )}
+            </div>
+          ))}
+        </section>
+        )}
+
+        {onglet === 'historique' && (
+        <section className="admin-section">
+          <CerbaTitle before="Historique des" accent="incidents clos" />
+          <p className="hint" style={{ marginBottom: 16 }}>
+            Conservé pour la traçabilité : chaque incident garde sa date de
+            signalement, sa date de retour à la normale et sa durée.
+          </p>
+          {closes === null && <p className="hint">Chargement…</p>}
+          {closes !== null && closes.length === 0 && (
+            <p className="hint">
+              Aucun incident clos pour le moment. Les alertes closes par «&nbsp;Retour
+              à la normale&nbsp;» apparaîtront ici.
+            </p>
+          )}
+          {closes?.map((e) => (
+            <div
+              className="admin-item admin-item-clos"
+              key={e.id}
+              style={{ ['--c' as string]: `var(--statut-${e.statut})` }}
+            >
+              <div className="row1">
+                <div className="name" style={{ fontSize: 15.5 }}>
+                  <i style={{ background: `var(--statut-${e.statut})` }} aria-hidden="true" />{' '}
+                  {e.analyse}
+                </div>
+                <div className="badges">
+                  <span className="badge badge-clos">Résolu</span>
+                  <span className="delay">
+                    Durée{' '}
+                    <b>{monte ? formatDuree(e.signale_le, e.resolu_le!) : '…'}</b>
+                  </span>
+                  <button
+                    className="btn"
+                    type="button"
+                    disabled={enCours}
+                    onClick={async () => {
+                      const ok = await appelApi('PATCH', { id: e.id, resolu: false });
+                      if (ok) {
+                        setOnglet('alertes');
+                        signaler({
+                          genre: 'ok',
+                          texte: `« ${e.analyse} » rouvert — l’alerte est de nouveau visible en consultation.`,
+                        });
+                      }
+                    }}
+                  >
+                    Rouvrir
+                  </button>
+                </div>
+              </div>
+              {e.commentaire && <div className="note">{e.commentaire}</div>}
+              <div className="meta">
+                Signalé le {monte ? formatDateHeure(e.signale_le) : '…'} · retour à
+                la normale le {monte ? formatDateHeure(e.resolu_le!) : '…'}
+              </div>
             </div>
           ))}
         </section>

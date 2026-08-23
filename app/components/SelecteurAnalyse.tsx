@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { CATALOGUE_ANALYSES } from '@/lib/catalogue-analyses';
+import { LIBELLES_ANALYSES, delaiHabituel } from '@/lib/catalogue-analyses';
 
 /** Nombre maximal d'options rendues à la fois (2 222 entrées au total). */
 const MAX_OPTIONS = 250;
@@ -15,7 +15,7 @@ function normaliser(s: string): string {
 }
 
 /** Index précalculé une seule fois : [libellé, forme normalisée]. */
-const INDEX: ReadonlyArray<readonly [string, string]> = CATALOGUE_ANALYSES.map(
+const INDEX: ReadonlyArray<readonly [string, string]> = LIBELLES_ANALYSES.map(
   (l) => [l, normaliser(l)] as const,
 );
 
@@ -184,6 +184,9 @@ export function SelecteurAnalyse({
                 onMouseEnter={() => setActif(i)}
               >
                 {o}
+                {delaiHabituel(o) && (
+                  <span className="sel-delai">{delaiHabituel(o)} j</span>
+                )}
               </li>
             ))}
             {horsCatalogue && (
