@@ -92,16 +92,10 @@ header.top {
   gap: var(--cerba-space-6); flex-wrap: wrap;
 }
 .brand { display: flex; align-items: center; gap: 20px; }
-/* Emplacement logo : le SVG officiel n'a pas été récupéré (designtokens.md §8).
-   Le logo Cerba n'est PAS redessiné. Remplaçable d'un grep sur data-cerba-placeholder. */
-.logo-slot {
-  border: 1px dashed var(--cerba-border); border-radius: var(--cerba-radius-sm);
-  padding: 14px 20px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
-  color: var(--cerba-muted); text-align: center; line-height: 1.3; min-width: 150px;
-}
-.logo-slot b {
-  display: block; font-size: 13px; color: var(--cerba-blue-primary);
-  letter-spacing: .02em; text-transform: none; font-weight: var(--cerba-weight-regular);
+/* Logo Cerba officiel (designtokens.md §8) : image fournie par le client,
+   affichée telle quelle. Ne pas recolorer, déformer ni recomposer. */
+.logo-cerba {
+  display: block; width: 94px; height: auto; flex-shrink: 0;
 }
 header.top .cerba-title { font-size: var(--cerba-text-xl); }
 header.top .sub { font-size: var(--cerba-text-sm); color: var(--cerba-muted); margin-top: 5px; }
@@ -307,6 +301,7 @@ footer.foot .mention { font-size: var(--cerba-text-xs); max-width: 440px; }
 }
 
 @media (max-width: 600px) {
+  .logo-cerba { width: 76px; }
   header.top .cerba-title { font-size: var(--cerba-text-lg); }
   .count .n { font-size: 36px; }
   .item .name { font-size: 15.5px; }
