@@ -1,91 +1,125 @@
-# LABCERBA — base Supabase (UE)
+# LABCERBA — Suivi de production · maquette de proposition
 
-Suivi des analyses impactées (indisponibilité, anomalie, retard), avec lecture
-publique et diffusion temps réel.
+Publication en temps réel des analyses spécialisées impactées (indisponibilité,
+anomalie, retard) chez un laboratoire sous-traitant, à destination de ses
+laboratoires clients. Voir le PRD pour le contexte (ISO 15189:2022 §6.8.2).
 
-Les données de santé impliquent un hébergement dans l'Union européenne : le
-projet doit être créé en région **Frankfurt / `eu-central-1`**. La région d'un
-projet Supabase ne peut pas être modifiée après création — en cas d'erreur, il
-faut recréer le projet.
+> **Maquette de proposition** · document de travail non officiel · ne reflète
+> pas l'état réel de la production Cerba. Proposition non sollicitée : Cerba
+> n'est engagé par aucun élément de ce dépôt.
 
-## 1. Créer le projet
+## Les deux URL
 
-### Option A — script automatisé
+| Page | URL | Rôle |
+|---|---|---|
+| **Consultation** | `/` | Lecture seule, temps réel. Phase proposition : protégée par `DEMO_PASSWORD`. |
+| **Administration** | `/admin` | Ajout / modification / suppression, protégée par `ADMIN_PASSWORD` (vérifié côté serveur à chaque écriture). |
 
-```bash
-export SUPABASE_ACCESS_TOKEN=sbp_...        # dashboard > Account > Access Tokens
-export SUPABASE_DB_PASSWORD='mot-de-passe-postgres'
-./scripts/setup-supabase.sh
-```
+En production, diffuser l'**alias stable** Vercel (ex.
+`https://<projet>.vercel.app/` et `https://<projet>.vercel.app/admin`), jamais
+l'URL de build propre à un déploiement.
 
-Le script crée le projet en `eu-central-1`, applique la migration et affiche
-Project URL, `anon` key et `service_role` key.
+## Pile
 
-### Option B — dashboard
+- **Next.js App Router** (TypeScript) sur Vercel, fonctions en région UE (`fra1`, cf. `vercel.json`).
+- **Supabase** (Postgres + Realtime + RLS), région UE (Francfort).
+- Aucune dépendance CDN au runtime : pile de polices système (les familles
+  réelles de Cerba n'ont pas été extraites, voir `designtokens.md` du dossier
+  de conception).
 
-1. https://supabase.com/dashboard → **New project**
-2. Region : **Central EU (Frankfurt)** — `eu-central-1`
-3. Définir le mot de passe Postgres, créer le projet.
-
-## 2. Appliquer le schéma
-
-SQL Editor → coller le contenu de
-[`supabase/migrations/20260823090000_analyses_impactees.sql`](supabase/migrations/20260823090000_analyses_impactees.sql) → **Run**.
-
-Ou en ligne de commande :
+## Lancement local
 
 ```bash
-psql "$DATABASE_URL" -f supabase/migrations/20260823090000_analyses_impactees.sql
+npm install
+cp .env.local.example .env.local   # puis compléter les valeurs
+npm run dev                        # http://localhost:3000
 ```
 
-Le script est idempotent (`if not exists`, `drop policy if exists`) : il peut
-être rejoué sans erreur.
+Base de données : appliquer `supabase/migrations/20260823090000_analyses_impactees.sql`
+(SQL Editor ou `psql`), puis, pour la démonstration,
+`supabase/seed.sql` — **données entièrement fictives et signalées comme telles**.
 
-## 3. Récupérer les clés
+## Variables d'environnement
 
-**Project Settings > API** :
+Toutes listées dans [`.env.local.example`](.env.local.example) :
 
-| Élément | Où l'utiliser |
-|---|---|
-| Project URL | client et serveur |
-| `anon` (publishable) | navigateur — protégée par RLS |
-| `service_role` (secret) | serveur uniquement — **contourne RLS** |
+| Variable | Portée | Rôle |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | client + serveur | URL du projet Supabase |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | client + serveur | clé publishable, protégée par RLS (SELECT seul) |
+| `SUPABASE_SERVICE_ROLE_KEY` | **serveur uniquement** | écritures via `/api/entrees` — jamais `NEXT_PUBLIC_`, jamais commitée |
+| `ADMIN_PASSWORD` | serveur | mot de passe de `/admin`, revérifié à chaque écriture (401 sinon) |
+| `DEMO_PASSWORD` | serveur | verrou de la consultation, phase proposition — **supprimer la variable pour rendre la page publique** (`lib/demo-lock.ts`) |
 
-Reporter dans un `.env` local, sur le modèle de [`.env.example`](.env.example).
-`.env` est ignoré par git ; la clé `service_role` ne doit jamais être commitée
-ni envoyée au navigateur.
+## Déploiement Vercel
+
+1. Importer le dépôt dans Vercel (framework détecté : Next.js).
+2. Renseigner les cinq variables ci-dessus (Project Settings → Environment
+   Variables). `vercel.json` fixe déjà la région `fra1`.
+3. Déployer. Vérifier ensuite :
+   - `/` demande le mot de passe de démonstration, puis affiche la liste ;
+   - une publication depuis `/admin` apparaît en consultation en < 2 s sans rechargement ;
+   - l'en-tête `X-Robots-Tag: noindex, nofollow` est présent.
+
+## Architecture de sécurité
+
+- Le navigateur n'utilise que la clé anon (`NEXT_PUBLIC_*`) ; la RLS n'autorise
+  que le SELECT → aucune écriture possible côté client.
+- Toute écriture passe par `app/api/entrees/route.ts` (POST / PATCH / DELETE)
+  avec la clé service role, côté serveur uniquement.
+- L'écran de mot de passe de `/admin` n'est qu'un portillon : la protection
+  réelle est la revérification d'`ADMIN_PASSWORD` par la route serveur à
+  chaque requête.
+- Le verrou de démonstration de la consultation est isolé dans
+  `lib/demo-lock.ts` : cookie httpOnly posé par `/api/acces` après
+  vérification serveur.
+
+## Garde-fous obligatoires (PRD §5.1)
+
+Non négociables tant que Cerba n'a pas validé le projet :
+
+- **Bandeau permanent** en tête de toutes les pages : « Maquette de
+  proposition · document de travail non officiel · ne reflète pas l'état réel
+  de la production Cerba » (`app/layout.tsx`, non masquable).
+- **Données de démonstration fictives** et explicitement signalées comme
+  telles (`supabase/seed.sql`).
+- **`noindex, nofollow`** sur toutes les pages (metadata + en-tête HTTP
+  `X-Robots-Tag`, `next.config.mjs`).
+- **Consultation également protégée** par mot de passe (`DEMO_PASSWORD`) tant
+  que le projet n'est pas validé : aucune page publique aux couleurs de Cerba.
+- **Aucune diffusion de l'URL** hors du cercle de la proposition.
+- **Retrait immédiat** sur simple demande de Cerba.
+
+## Branding — état des sources
+
+Les valeurs visuelles proviennent du fichier de tokens (`designtokens.md` du
+dossier de conception) : **aucune n'a pu être extraite du site Cerba**, ce sont
+les valeurs de repli du brief, signalées comme telles en commentaire dans
+`app/globals.css`. Le logo officiel n'est pas redessiné (emplacement
+`data-cerba-placeholder="logo"`), le motif « coup de pinceau » n'est pas
+inventé (emplacement commenté). Les couleurs des trois statuts sont des
+couleurs **fonctionnelles provisoires hors charte**, toujours accompagnées
+d'un libellé texte (accessibilité daltonisme). Le motif identitaire des titres
+(un unique fragment en gras) est appliqué via `app/components/CerbaTitle.tsx`.
 
 ## Modèle de données
 
-`public.analyses_impactees`
+`public.analyses_impactees` — voir
+[`supabase/migrations/20260823090000_analyses_impactees.sql`](supabase/migrations/20260823090000_analyses_impactees.sql).
 
 | Colonne | Type | Notes |
 |---|---|---|
 | `id` | uuid | PK, `gen_random_uuid()` |
-| `analyse` | text | libellé de l'analyse, obligatoire |
+| `analyse` | text | obligatoire |
 | `statut` | text | `indisponible` \| `anomalie` \| `retard` (CHECK) |
-| `delai` | text | délai annoncé, `''` par défaut |
-| `commentaire` | text | `''` par défaut |
-| `signale_le` | timestamptz | `now()` |
-| `maj_le` | timestamptz | `now()` |
+| `delai` | text | optionnel, `''` par défaut |
+| `commentaire` | text | optionnel, `''` par défaut |
+| `signale_le` | timestamptz | `now()` à la création |
+| `maj_le` | timestamptz | positionné par la route serveur à chaque modification |
 
-**RLS activée.** Seule la policy `lecture_publique` existe : `SELECT` autorisé
-pour tous, aucune écriture possible avec la clé `anon`. Les insertions et mises
-à jour passent par la clé `service_role` (qui contourne RLS) depuis un contexte
-serveur.
+**RLS activée**, seule policy : `lecture_publique` (SELECT). **Realtime** : la
+table est dans la publication `supabase_realtime` avec `replica identity full`.
 
-**Realtime** : la table est ajoutée à la publication `supabase_realtime`, avec
-`replica identity full` pour que les `UPDATE`/`DELETE` transportent les valeurs
-complètes.
-
-```js
-supabase
-  .channel('analyses')
-  .on('postgres_changes',
-      { event: '*', schema: 'public', table: 'analyses_impactees' },
-      payload => console.log(payload))
-  .subscribe()
-```
-
-`maj_le` n'est pas mis à jour automatiquement : il faut le positionner à chaque
-écriture, ou ajouter un trigger `before update`.
+Création du projet Supabase (région **Frankfurt / `eu-central-1`**, non
+modifiable après création) : `./scripts/setup-supabase.sh` ou dashboard — voir
+les commentaires du script.
