@@ -11,12 +11,23 @@ import {
   Entree,
   STATUT_LABEL,
   Statut,
+  estActive,
   formatCourt,
   formatDateHeure,
   trierParGravite,
 } from '@/lib/types';
+import { LIBELLES_ANALYSES, delaiHabituel } from '@/lib/catalogue-analyses';
 import { CerbaTitle } from './CerbaTitle';
 import { LogoSlot } from './LogoSlot';
+
+/** Recherche tolérante : accents et casse ignorés. */
+function normaliser(s: string): string {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
+const CATALOGUE_NORMALISE = LIBELLES_ANALYSES.map(
+  (l) => [l, normaliser(l)] as const,
+);
 
 export function Consultation() {
   const [entrees, setEntrees] = useState<Entree[] | null>(null);
@@ -25,6 +36,7 @@ export function Consultation() {
   // Rendu des horodatages après montage uniquement, pour éviter tout écart
   // d'hydratation entre fuseau serveur et fuseau navigateur.
   const [monte, setMonte] = useState(false);
+  const [recherche, setRecherche] = useState('');
   const entreesRef = useRef<Entree[]>([]);
 
   useEffect(() => {
@@ -37,9 +49,11 @@ export function Consultation() {
     const supabase = getSupabaseBrowser();
     let actif = true;
 
+    // La consultation ne montre que les alertes actives : un incident résolu
+    // sort de la liste, mais reste conservé en base pour l'historique.
     const appliquer = (liste: Entree[]) => {
       entreesRef.current = liste;
-      setEntrees(trierParGravite(liste));
+      setEntrees(trierParGravite(liste.filter(estActive)));
       setMajLe(new Date());
     };
 
@@ -90,6 +104,32 @@ export function Consultation() {
   }, [entrees]);
 
   const total = entrees?.length ?? 0;
+
+  const requete = normaliser(recherche.trim());
+
+  /**
+   * Résultat de la recherche. La question du laboratoire client n'est pas
+   * « quelles analyses sont impactées ? » mais « la mienne l'est-elle ? » :
+   * quand la recherche ne remonte aucune alerte, on le dit explicitement en
+   * nommant les analyses du catalogue qui correspondent, plutôt que d'afficher
+   * une liste vide qu'on pourrait prendre pour un défaut d'affichage.
+   */
+  const resultat = useMemo(() => {
+    if (!requete) return { filtrees: entrees ?? [], rassurantes: [] as string[] };
+    const mots = requete.split(/\s+/);
+    const correspond = (t: string) => {
+      const n = normaliser(t);
+      return mots.every((m) => n.includes(m));
+    };
+    const filtrees = (entrees ?? []).filter((e) => correspond(e.analyse));
+    if (filtrees.length > 0) return { filtrees, rassurantes: [] as string[] };
+    const rassurantes = CATALOGUE_NORMALISE.filter(([, n]) =>
+      mots.every((m) => n.includes(m)),
+    )
+      .slice(0, 5)
+      .map(([l]) => l);
+    return { filtrees, rassurantes };
+  }, [requete, entrees]);
 
   return (
     <>
@@ -155,6 +195,28 @@ export function Consultation() {
           {entrees !== null && (
             <>
               <CerbaTitle before="Analyses" accent="concernées" />
+
+              {/* Recherche : répond à « mon analyse est-elle impactée ? » */}
+              <div className="recherche">
+                <input
+                  type="search"
+                  value={recherche}
+                  onChange={(e) => setRecherche(e.target.value)}
+                  placeholder="Rechercher une analyse du catalogue…"
+                  aria-label="Rechercher une analyse"
+                />
+                {recherche && (
+                  <button
+                    type="button"
+                    className="recherche-effacer"
+                    onClick={() => setRecherche('')}
+                    aria-label="Effacer la recherche"
+                  >
+                    Effacer
+                  </button>
+                )}
+              </div>
+
               {total === 0 ? (
                 <div className="nominal">
                   <i aria-hidden="true" />
@@ -163,9 +225,36 @@ export function Consultation() {
                     <span>Délais de rendu habituels respectés.</span>
                   </div>
                 </div>
+              ) : requete && resultat.filtrees.length === 0 ? (
+                <div className="nominal">
+                  <i aria-hidden="true" />
+                  <div>
+                    {resultat.rassurantes.length > 0 ? (
+                      <>
+                        <strong>
+                          {resultat.rassurantes.length > 1
+                            ? 'Ces analyses ne sont pas impactées'
+                            : 'Cette analyse n’est pas impactée'}
+                        </strong>
+                        <span>
+                          {resultat.rassurantes.join(' · ')} — délai de rendu
+                          habituel.
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <strong>Aucune analyse impactée pour cette recherche</strong>
+                        <span>
+                          Aucun libellé du catalogue ne correspond à «&nbsp;
+                          {recherche.trim()}&nbsp;». Vérifiez l’orthographe.
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
               ) : (
                 <div className="list">
-                  {entrees.map((e) => (
+                  {resultat.filtrees.map((e) => (
                     <article
                       className="item"
                       key={e.id}
@@ -181,6 +270,13 @@ export function Consultation() {
                           {e.delai && (
                             <span className="delay">
                               {DELAI_LABEL[e.statut]} <b>{e.delai}</b>
+                            </span>
+                          )}
+                          {/* Repère de comparaison : le délai de rendu normal
+                              de cette analyse, issu du catalogue. */}
+                          {delaiHabituel(e.analyse) && (
+                            <span className="delay delay-habituel">
+                              Habituellement <b>{delaiHabituel(e.analyse)} j</b>
                             </span>
                           )}
                         </div>

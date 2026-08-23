@@ -49,7 +49,10 @@ export async function chargerEntrees(): Promise<
   }
   try {
     const res = await Promise.race([
-      getSupabaseBrowser().from('analyses_impactees').select('*'),
+      getSupabaseBrowser()
+        .from('analyses_impactees')
+        .select('*')
+        .order('signale_le', { ascending: false }),
       new Promise<never>((_, rejeter) =>
         setTimeout(() => rejeter(new Error('__delai__')), DELAI_LECTURE_MS),
       ),
@@ -59,7 +62,14 @@ export async function chargerEntrees(): Promise<
         erreur: `réponse Supabase : « ${res.error.message} » — vérifiez NEXT_PUBLIC_SUPABASE_ANON_KEY et l'application de la migration SQL`,
       };
     }
-    return { entrees: (res.data ?? []) as Entree[] };
+    // `resolu_le` est absent tant que la migration de traçabilité n'a pas été
+    // appliquée : on le normalise à null, toutes les entrées sont alors
+    // considérées actives — l'application reste fonctionnelle entre-temps.
+    const entrees = (res.data ?? []).map((e) => ({
+      ...e,
+      resolu_le: (e as Partial<Entree>).resolu_le ?? null,
+    })) as Entree[];
+    return { entrees };
   } catch (e) {
     return {
       erreur:

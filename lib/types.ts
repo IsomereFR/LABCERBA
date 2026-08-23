@@ -8,6 +8,14 @@ export interface Entree {
   commentaire: string;
   signale_le: string;
   maj_le: string;
+  /** Horodatage du retour à la normale. `null` = alerte active. */
+  resolu_le: string | null;
+  /** Auteur de la publication, vide tant que les comptes nommés n'existent pas. */
+  publie_par?: string;
+}
+
+export function estActive(e: Entree): boolean {
+  return !e.resolu_le;
 }
 
 export const STATUTS: Statut[] = ['indisponible', 'anomalie', 'retard'];
@@ -60,4 +68,23 @@ export function formatDateHeure(iso: string): string {
 export function formatCourt(iso: string): string {
   const d = new Date(iso);
   return `${FMT_DATE.format(d)} ${FMT_HEURE.format(d)}`;
+}
+
+/** Durée d'un incident, en clair : « 3 jours », « 5 h », « moins d'une heure ». */
+export function formatDuree(debutIso: string, finIso: string): string {
+  const ms = new Date(finIso).getTime() - new Date(debutIso).getTime();
+  if (!Number.isFinite(ms) || ms < 0) return '—';
+  const heures = Math.floor(ms / 3_600_000);
+  if (heures < 1) return 'moins d’une heure';
+  if (heures < 24) return `${heures} h`;
+  const jours = Math.round(heures / 24);
+  return jours > 1 ? `${jours} jours` : '1 jour';
+}
+
+/** Historique : les incidents clos, du plus récemment résolu au plus ancien. */
+export function trierParResolution(entrees: Entree[]): Entree[] {
+  return [...entrees].sort(
+    (a, b) =>
+      new Date(b.resolu_le ?? 0).getTime() - new Date(a.resolu_le ?? 0).getTime(),
+  );
 }

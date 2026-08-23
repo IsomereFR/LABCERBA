@@ -36,10 +36,15 @@ type Champs = {
   statut?: unknown;
   delai?: unknown;
   commentaire?: unknown;
+  /** true = retour à la normale (horodaté), false = réouverture. */
+  resolu?: unknown;
 };
 
-function validerChamps(c: Champs, creation: boolean): { erreur?: string; valeurs?: Record<string, string> } {
-  const valeurs: Record<string, string> = {};
+function validerChamps(
+  c: Champs,
+  creation: boolean,
+): { erreur?: string; valeurs?: Record<string, string | null> } {
+  const valeurs: Record<string, string | null> = {};
 
   if (c.analyse !== undefined || creation) {
     if (typeof c.analyse !== 'string' || !c.analyse.trim()) {
@@ -60,6 +65,12 @@ function validerChamps(c: Champs, creation: boolean): { erreur?: string; valeurs
   if (c.commentaire !== undefined) {
     if (typeof c.commentaire !== 'string') return { erreur: 'Commentaire invalide.' };
     valeurs.commentaire = c.commentaire.trim();
+  }
+  // Retour à la normale : on horodate au lieu de supprimer, pour conserver
+  // l'historique de l'incident (traçabilité ISO 15189 §6.8.2).
+  if (c.resolu !== undefined) {
+    if (typeof c.resolu !== 'boolean') return { erreur: 'Champ « resolu » invalide.' };
+    valeurs.resolu_le = c.resolu ? new Date().toISOString() : null;
   }
   return { valeurs };
 }

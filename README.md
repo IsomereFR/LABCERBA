@@ -18,9 +18,12 @@ laboratoires clients. Voir le PRD pour le contexte (ISO 15189:2022 §6.8.2).
 L'administration s'appuie sur le **catalogue complet des analyses**
 (`lib/catalogue-analyses.ts`, fichier généré depuis l'export CSV
 `catalogue_exams_fr` du 23/08/2026 — 2 755 lignes ramenées à 2 222 libellés
-uniques « Titre · Sous-titre ») : sélection par liste alphabétique avec index
+uniques « Titre · Sous-titre », avec le délai de rendu habituel issu de la
+colonne « Délai moyen ») : sélection par liste alphabétique avec index
 A–Z et recherche insensible aux accents, saisie libre possible pour une
-analyse hors catalogue. Le délai se saisit soit comme **date de retour à la
+analyse hors catalogue. La consultation dispose du même moteur de recherche :
+lorsqu'une analyse recherchée n'est pas impactée, la page le dit explicitement
+plutôt que d'afficher une liste vide. Le délai se saisit soit comme **date de retour à la
 normale** (calendrier), soit comme **délai approximatif** (suggestions
 contextualisées au statut), avec commentaire libre et aperçu en direct du
 rendu exact en consultation.
@@ -127,6 +130,21 @@ d'un libellé texte (accessibilité daltonisme). Le motif identitaire des titres
 | `commentaire` | text | optionnel, `''` par défaut |
 | `signale_le` | timestamptz | `now()` à la création |
 | `maj_le` | timestamptz | positionné par la route serveur à chaque modification |
+| `resolu_le` | timestamptz | `NULL` = alerte active ; horodaté au retour à la normale |
+| `publie_par` | text | auteur, vide tant que les comptes nommés n'existent pas |
+
+### Traçabilité des incidents
+
+« Retour à la normale » **n'efface pas** l'entrée : il horodate `resolu_le`.
+L'alerte sort de la consultation et rejoint l'onglet *Historique* de `/admin`,
+avec sa durée — le laboratoire peut ainsi prouver qu'il a informé ses clients,
+quand et pendant combien de temps (ISO 15189:2022 §6.8.2). La suppression
+définitive reste disponible, mais pour les seules saisies erronées. Un incident
+clos peut être rouvert depuis l'historique.
+
+Migration correspondante :
+[`20260823140000_tracabilite_resolution.sql`](supabase/migrations/20260823140000_tracabilite_resolution.sql)
+— additive et idempotente, elle n'altère aucune donnée existante.
 
 **RLS activée**, seule policy : `lecture_publique` (SELECT). **Realtime** : la
 table est dans la publication `supabase_realtime` avec `replica identity full`.

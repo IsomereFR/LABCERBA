@@ -351,6 +351,41 @@ footer.foot .mention { font-size: var(--cerba-text-xs); max-width: 440px; }
 /* Compteur à zéro du dashboard : présent mais en retrait. */
 .tally-zero { opacity: .5; }
 
+/* ---------- Recherche en consultation ---------- */
+.recherche { position: relative; margin-bottom: var(--cerba-space-4); }
+.recherche input {
+  width: 100%; font-family: inherit; font-size: var(--cerba-text-sm);
+  border: 1px solid var(--cerba-border); border-radius: var(--cerba-radius-sm);
+  padding: 11px 92px 11px 14px;
+  color: var(--cerba-ink); background: var(--cerba-surface);
+}
+.recherche input:focus { outline: 2px solid var(--cerba-blue-primary); outline-offset: 1px; }
+.recherche input::-webkit-search-cancel-button { display: none; }
+.recherche-effacer {
+  position: absolute; top: 50%; right: 8px; transform: translateY(-50%);
+  font-family: inherit; font-size: 12.5px; cursor: pointer;
+  border: 1px solid var(--cerba-border); border-radius: var(--cerba-radius-sm);
+  background: var(--cerba-surface); color: var(--cerba-blue-primary);
+  padding: 5px 11px;
+}
+.recherche-effacer:hover { border-color: var(--cerba-blue-primary); }
+
+/* Délai de rendu habituel : repère secondaire, en retrait du délai annoncé. */
+.delay-habituel {
+  background: var(--cerba-surface); color: var(--cerba-muted);
+  border: 1px solid var(--cerba-border);
+}
+.sel-delai {
+  float: right; font-size: 11.5px; color: var(--cerba-muted);
+  background: var(--cerba-surface-alt); border-radius: 999px;
+  padding: 1px 8px; margin-left: 10px;
+}
+
+/* ---------- Historique des incidents clos ---------- */
+.admin-item-clos { opacity: .82; }
+.admin-item-clos:hover { opacity: 1; }
+.badge-clos { background: var(--cerba-muted); }
+
 .confirm-suppr {
   margin-top: var(--cerba-space-3); padding: 10px 14px;
   background: #FBEFEE; border: 1px solid var(--statut-indisponible);
