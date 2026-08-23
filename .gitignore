@@ -2,4 +2,8 @@
 .env.local
 .env.*.local
 node_modules/
+.next/
+out/
+.vercel
+*.tsbuildinfo
 .DS_Store

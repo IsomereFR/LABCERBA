@@ -1,0 +1,313 @@
+:root {
+  /* --- Couleurs : REPLI DU BRIEF, non extraites du CSS Cerba (designtokens.md §3) --- */
+  --cerba-blue-primary: #005CA9;  /* SOURCE: repli brief — À REMPLACER */
+  --cerba-ink:          #1B2B3A;  /* SOURCE: repli brief — À REMPLACER */
+  --cerba-surface:      #FFFFFF;  /* SOURCE: repli brief — À REMPLACER */
+  --cerba-surface-alt:  #F4F8FB;  /* SOURCE: repli brief — À REMPLACER */
+  /* --cerba-secondary:            MANQUANT — aucune source, ne pas inventer */
+
+  /* Dérivées par calcul depuis le repli, non sourcées */
+  --cerba-blue-hover:   #004A87;
+  --cerba-border:       #D9E4EE;
+  --cerba-muted:        #5A6B7A;
+
+  /* --- Couleurs d'état : ⛔ HORS CHARTE CERBA ---
+     Les couleurs succès/alerte/erreur de Cerba sont INCONNUES (designtokens.md §3)
+     et ne doivent pas être inventées comme couleurs de marque. Les valeurs
+     ci-dessous sont FONCTIONNELLES, choisies pour la lisibilité et l'écart
+     chromatique (accessibilité daltonisme : jamais utilisées seules, toujours
+     accompagnées d'un libellé texte). À remplacer si la palette d'état réelle
+     est un jour échantillonnée. Seul --statut-retard réutilise le bleu du repli. */
+  --statut-indisponible: #B03A2E; /* ⛔ fonctionnelle provisoire — alerte */
+  --statut-anomalie:     #B26A00; /* ⛔ fonctionnelle provisoire — avertissement */
+  --statut-retard:       var(--cerba-blue-primary); /* teinte informative */
+
+  /* --- Typographie : familles réelles INCONNUES, repli system-ui (designtokens.md §4) --- */
+  --cerba-font-sans: system-ui, -apple-system, "Segoe UI", Roboto,
+                     Helvetica, Arial, sans-serif; /* SOURCE: repli brief */
+  --cerba-weight-regular: 400;  /* poids réel non extrait */
+  --cerba-weight-bold:    700;  /* poids réel non extrait */
+
+  /* --- Rayons / échelle / espacement : GÉNÉRIQUES, non Cerba (designtokens.md §6) --- */
+  --cerba-radius-sm: 4px;
+  --cerba-radius-md: 8px;
+
+  --cerba-text-xs:   0.75rem;
+  --cerba-text-sm:   0.875rem;
+  --cerba-text-base: 1rem;
+  --cerba-text-lg:   1.25rem;
+  --cerba-text-xl:   1.5625rem;
+  --cerba-text-2xl:  1.953rem;
+
+  --cerba-space-1:  4px;
+  --cerba-space-2:  8px;
+  --cerba-space-3:  12px;
+  --cerba-space-4:  16px;
+  --cerba-space-6:  24px;
+  --cerba-space-8:  32px;
+  --cerba-space-12: 48px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--cerba-font-sans);
+  font-weight: var(--cerba-weight-regular);
+  color: var(--cerba-ink);
+  background: var(--cerba-surface);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap { max-width: 900px; margin: 0 auto; padding: 0 var(--cerba-space-6); }
+
+/* ---------- Bandeau obligatoire (PRD §5.1) ----------
+   Volontairement HORS charte Cerba : il ne doit pas pouvoir être confondu
+   avec un élément de leur identité. Non masquable. */
+.disclaimer {
+  background: #3A3A3A; color: #FFFFFF; font-size: 13px;
+  padding: 11px var(--cerba-space-6); text-align: center; letter-spacing: .01em;
+}
+.disclaimer b { font-weight: var(--cerba-weight-bold); }
+
+/* ---------- Motif identitaire des titres (designtokens.md §10) ----------
+   Graisse normale par défaut ; exactement UN fragment contigu en gras. */
+.cerba-title {
+  font-family: var(--cerba-font-sans);
+  font-weight: var(--cerba-weight-regular);
+  color: var(--cerba-ink);
+  line-height: 1.25;
+  letter-spacing: -.01em;
+}
+.cerba-title__accent {
+  font-weight: var(--cerba-weight-bold);
+  color: var(--cerba-blue-primary);
+}
+.cerba-body strong { font-weight: var(--cerba-weight-bold); color: inherit; }
+
+/* ---------- En-tête ---------- */
+header.top {
+  padding: 30px 0 26px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--cerba-space-6); flex-wrap: wrap;
+}
+.brand { display: flex; align-items: center; gap: 20px; }
+/* Emplacement logo : le SVG officiel n'a pas été récupéré (designtokens.md §8).
+   Le logo Cerba n'est PAS redessiné. Remplaçable d'un grep sur data-cerba-placeholder. */
+.logo-slot {
+  border: 1px dashed var(--cerba-border); border-radius: var(--cerba-radius-sm);
+  padding: 14px 20px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--cerba-muted); text-align: center; line-height: 1.3; min-width: 150px;
+}
+.logo-slot b {
+  display: block; font-size: 13px; color: var(--cerba-blue-primary);
+  letter-spacing: .02em; text-transform: none; font-weight: var(--cerba-weight-regular);
+}
+header.top .cerba-title { font-size: var(--cerba-text-xl); }
+header.top .sub { font-size: var(--cerba-text-sm); color: var(--cerba-muted); margin-top: 5px; }
+.live {
+  display: inline-flex; align-items: center; gap: 9px; font-size: 12.5px;
+  color: var(--cerba-blue-primary); background: var(--cerba-surface-alt);
+  border-radius: var(--cerba-radius-sm); padding: 9px 15px; white-space: nowrap;
+}
+.live i {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--cerba-blue-primary); font-style: normal;
+}
+
+/* ---------- Bande de synthèse pleine largeur ---------- */
+.band { background: var(--cerba-surface-alt); padding: 26px 0; }
+.synth {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 28px; flex-wrap: wrap;
+}
+.count { display: flex; align-items: baseline; gap: 14px; }
+.count .n {
+  font-size: 46px; line-height: 1; color: var(--cerba-blue-primary);
+  font-weight: var(--cerba-weight-regular);
+}
+.count .lbl { font-size: 15px; color: var(--cerba-ink); }
+.count .lbl span { display: block; font-size: 12.5px; color: var(--cerba-muted); margin-top: 2px; }
+.tallies { display: flex; gap: 9px; flex-wrap: wrap; }
+.tally {
+  display: inline-flex; align-items: center; gap: 9px; background: var(--cerba-surface);
+  border-radius: var(--cerba-radius-sm); padding: 9px 14px;
+  font-size: 13px; color: var(--cerba-ink);
+}
+.tally i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; font-style: normal; }
+.tally b { font-weight: var(--cerba-weight-bold); }
+
+/* Emplacement réservé au motif « coup de pinceau » (designtokens.md §9).
+   Aucune forme n'est dessinée : les SVG officiels n'ont pas été récupérés,
+   et un tracé approximatif serait une invention d'identité visuelle. */
+
+/* ---------- Liste ---------- */
+main.page { padding: 34px 0 40px; }
+main.page .cerba-title { font-size: 22px; margin-bottom: 18px; }
+.list { display: flex; flex-direction: column; gap: 14px; }
+.item {
+  background: var(--cerba-surface); border: 1px solid var(--cerba-border);
+  border-radius: var(--cerba-radius-sm); border-left: 4px solid var(--c);
+  padding: 18px 22px 16px;
+}
+.item .row1 {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: var(--cerba-space-4); flex-wrap: wrap;
+}
+.item .name {
+  font-size: 17px; color: var(--cerba-ink); font-weight: var(--cerba-weight-bold);
+  display: flex; align-items: center; gap: 11px;
+}
+.item .name i {
+  width: 10px; height: 10px; border-radius: 50%; background: var(--c);
+  flex-shrink: 0; font-style: normal;
+}
+.badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.badge {
+  font-size: 11.5px; font-weight: var(--cerba-weight-bold); letter-spacing: .06em;
+  text-transform: uppercase; padding: 5px 11px; border-radius: var(--cerba-radius-sm);
+  color: #FFFFFF; background: var(--c); white-space: nowrap;
+}
+.delay {
+  font-size: 12.5px; padding: 5px 11px; border-radius: var(--cerba-radius-sm);
+  background: var(--cerba-surface-alt); color: var(--cerba-ink); white-space: nowrap;
+}
+.delay b { font-weight: var(--cerba-weight-bold); }
+.item .note { font-size: 14.5px; color: var(--cerba-muted); margin-top: 10px; padding-left: 21px; }
+.item .meta { font-size: var(--cerba-text-xs); color: var(--cerba-muted); margin-top: 10px; padding-left: 21px; }
+
+/* ---------- État nominal ---------- */
+.nominal {
+  background: var(--cerba-surface); border: 1px solid var(--cerba-border);
+  border-radius: var(--cerba-radius-sm); border-left: 4px solid var(--cerba-blue-primary);
+  padding: 30px 24px; display: flex; align-items: center; gap: 18px;
+}
+.nominal i {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--cerba-blue-primary); flex-shrink: 0; font-style: normal;
+}
+.nominal strong {
+  font-size: 19px; color: var(--cerba-ink);
+  font-weight: var(--cerba-weight-bold); display: block;
+}
+.nominal span { display: block; font-size: var(--cerba-text-sm); color: var(--cerba-muted); margin-top: 3px; }
+
+/* ---------- Pied ---------- */
+footer.foot {
+  border-top: 1px solid var(--cerba-border); padding: 20px 0 30px; font-size: 13px;
+  color: var(--cerba-muted);
+  display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap;
+}
+footer.foot b { color: var(--cerba-ink); font-weight: var(--cerba-weight-bold); }
+footer.foot .mention { font-size: var(--cerba-text-xs); max-width: 440px; }
+
+/* ---------- Formulaires (portillons + admin) ---------- */
+.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: var(--cerba-space-4); }
+.field label { font-size: 13px; font-weight: var(--cerba-weight-bold); color: var(--cerba-ink); }
+.field input[type="text"], .field input[type="password"], .field textarea {
+  font-family: inherit; font-size: var(--cerba-text-sm);
+  border: 1px solid var(--cerba-border); border-radius: var(--cerba-radius-sm);
+  padding: 9px 12px; color: var(--cerba-ink); background: var(--cerba-surface);
+}
+.field input:focus, .field textarea:focus {
+  outline: 2px solid var(--cerba-blue-primary); outline-offset: 1px;
+}
+.field textarea { resize: vertical; min-height: 72px; }
+.hint { font-size: var(--cerba-text-xs); color: var(--cerba-muted); }
+
+.btn {
+  font-family: inherit; font-size: 13.5px; cursor: pointer;
+  border: 1px solid var(--cerba-border); background: var(--cerba-surface);
+  color: var(--cerba-blue-primary);
+  padding: 9px 16px; border-radius: var(--cerba-radius-sm);
+}
+.btn:hover { border-color: var(--cerba-blue-primary); }
+.btn-primary {
+  background: var(--cerba-blue-primary); color: #FFFFFF;
+  border-color: var(--cerba-blue-primary);
+}
+.btn-primary:hover { background: var(--cerba-blue-hover); border-color: var(--cerba-blue-hover); }
+.btn-danger { color: var(--statut-indisponible); }
+.btn-danger:hover { border-color: var(--statut-indisponible); }
+.btn:disabled { opacity: .55; cursor: not-allowed; }
+
+/* Portillon mot de passe */
+.gate { max-width: 420px; margin: var(--cerba-space-12) auto; padding: 0 var(--cerba-space-6); }
+.gate .card {
+  border: 1px solid var(--cerba-border); border-radius: var(--cerba-radius-sm);
+  padding: var(--cerba-space-6);
+}
+.gate .cerba-title { font-size: var(--cerba-text-lg); margin-bottom: 6px; }
+.gate p.sub { font-size: var(--cerba-text-sm); color: var(--cerba-muted); margin-bottom: var(--cerba-space-4); }
+.gate .erreur { color: var(--statut-indisponible); font-size: var(--cerba-text-sm); margin-top: 10px; }
+
+/* Consigne « aucune donnée patient » */
+.consigne {
+  background: var(--cerba-surface-alt);
+  border-left: 4px solid var(--statut-anomalie);
+  border-radius: var(--cerba-radius-sm);
+  font-size: 13px; padding: 10px 14px; margin-bottom: 8px;
+}
+.consigne b { font-weight: var(--cerba-weight-bold); }
+
+/* Retour visuel succès / échec */
+.flash {
+  border-radius: var(--cerba-radius-sm); font-size: var(--cerba-text-sm);
+  padding: 11px 14px; margin-bottom: var(--cerba-space-4);
+  border: 1px solid transparent;
+}
+.flash.ok {
+  background: var(--cerba-surface-alt); color: var(--cerba-ink);
+  border-color: var(--cerba-blue-primary);
+}
+.flash.ko {
+  background: #FBEFEE; color: var(--statut-indisponible);
+  border-color: var(--statut-indisponible);
+}
+
+/* ---------- Admin ---------- */
+.admin-section {
+  border: 1px solid var(--cerba-border); border-radius: var(--cerba-radius-sm);
+  padding: var(--cerba-space-6); margin-bottom: var(--cerba-space-6);
+}
+.admin-section > .cerba-title { font-size: var(--cerba-text-lg); margin-bottom: var(--cerba-space-4); }
+.statut-choix { display: flex; gap: 9px; flex-wrap: wrap; }
+.statut-choix label {
+  display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+  border: 1px solid var(--cerba-border); border-radius: var(--cerba-radius-sm);
+  padding: 8px 14px; font-size: 13.5px; font-weight: var(--cerba-weight-regular);
+}
+.statut-choix label:has(input:checked) {
+  border-color: var(--cerba-blue-primary);
+  background: var(--cerba-surface-alt);
+  font-weight: var(--cerba-weight-bold);
+}
+.statut-choix i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; font-style: normal; }
+.statut-choix input { accent-color: var(--cerba-blue-primary); }
+
+.admin-item {
+  border: 1px solid var(--cerba-border); border-radius: var(--cerba-radius-sm);
+  border-left: 4px solid var(--c);
+  padding: var(--cerba-space-4) 18px; margin-bottom: var(--cerba-space-3);
+}
+.admin-item .row1 {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--cerba-space-4); flex-wrap: wrap;
+}
+.admin-item .actions { display: flex; gap: 8px; }
+.admin-item .meta { font-size: var(--cerba-text-xs); color: var(--cerba-muted); margin-top: 6px; }
+.admin-item .note { font-size: var(--cerba-text-sm); color: var(--cerba-muted); margin-top: 6px; }
+.admin-edit { margin-top: var(--cerba-space-4); border-top: 1px solid var(--cerba-border); padding-top: var(--cerba-space-4); }
+
+.confirm-suppr {
+  margin-top: var(--cerba-space-3); padding: 10px 14px;
+  background: #FBEFEE; border: 1px solid var(--statut-indisponible);
+  border-radius: var(--cerba-radius-sm); font-size: var(--cerba-text-sm);
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+}
+
+@media (max-width: 600px) {
+  header.top .cerba-title { font-size: var(--cerba-text-lg); }
+  .count .n { font-size: 36px; }
+  .item .name { font-size: 15.5px; }
+}
