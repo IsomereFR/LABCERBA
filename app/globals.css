@@ -5,6 +5,8 @@
   --cerba-surface:      #FFFFFF;  /* SOURCE: repli brief — À REMPLACER */
   --cerba-surface-alt:  #F4F8FB;  /* SOURCE: repli brief — À REMPLACER */
   /* --cerba-secondary:            MANQUANT — aucune source, ne pas inventer */
+  --cerba-brush:        #C1D8EA;  /* SOURCE: échantillonné sur lab-cerba.com —
+                                     teinte dominante de la bande, très constante */
 
   /* Dérivées par calcul depuis le repli, non sourcées */
   --cerba-blue-hover:   #004A87;
@@ -82,7 +84,14 @@ body {
 .cerba-title__accent {
   font-weight: var(--cerba-weight-bold);
   color: var(--cerba-blue-primary);
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  /* Contexte d'empilement : confine le pinceau (z-index négatif) derrière le
+     texte du fragment, sans le faire passer sous le fond de la page. */
+  isolation: isolate;
 }
+.cerba-title__mot { position: relative; z-index: 1; }
 .cerba-body strong { font-weight: var(--cerba-weight-bold); color: inherit; }
 
 /* ---------- En-tête ---------- */
@@ -487,39 +496,32 @@ footer.foot .mention { font-size: var(--cerba-text-xs); max-width: 440px; }
 /* =====================================================================
    Animations — évocation « coup de pinceau » de la DA Cerba.
    Volontairement abstraites (balayages de matière translucide) : les SVG
-   officiels du motif n'ont pas été récupérés et ne sont PAS redessinés
-   (designtokens.md §9) ; seule la gestuelle du geste de pinceau — un
-   passage latéral qui dépose la couleur — est reprise, sobrement.
+   officiels du motif n'ont pas été récupérés : le tracé est ORIGINAL,
+   redessiné à la main d'après la gestuelle observée sur lab-cerba.com
+   (attaque fine, corps plein, sortie fuyante, bords frangés).
    ===================================================================== */
 
-/* Le fragment accentué des titres reçoit un soulignement déposé de gauche
-   à droite, comme un passage de brosse sous le mot. */
-.cerba-title__accent {
-  position: relative;
-  /* Deux passages superposés, épais et légèrement décalés, pour la matière. */
-  background-image:
-    linear-gradient(
-      100deg,
-      color-mix(in srgb, var(--cerba-blue-primary) 42%, transparent) 0%,
-      color-mix(in srgb, var(--cerba-blue-primary) 24%, transparent) 45%,
-      color-mix(in srgb, var(--cerba-blue-primary) 36%, transparent) 72%,
-      color-mix(in srgb, var(--cerba-blue-primary) 12%, transparent) 94%,
-      transparent 100%
-    ),
-    linear-gradient(
-      95deg,
-      color-mix(in srgb, var(--cerba-blue-primary) 18%, transparent) 0%,
-      color-mix(in srgb, var(--cerba-blue-primary) 10%, transparent) 70%,
-      transparent 96%
-    );
-  background-repeat: no-repeat, no-repeat;
-  background-position: 0 76%, 3% 96%;
-  background-size: 0% 0.5em, 0% 0.32em;
-  animation: pinceau-souligne .7s cubic-bezier(.25, .6, .3, 1) .15s both;
+/* Le fragment accentué est traversé par un coup de pinceau qui passe DERRIÈRE
+   le texte et déborde le mot : le geste ne s'arrête pas à la lettre.
+   Tracé : components/CoupDePinceau.tsx. */
+.pinceau {
+  position: absolute;
+  z-index: -1;
+  /* Débord franc : le geste traverse le mot et le dépasse largement. */
+  left: -.62em;
+  right: -.78em;
+  top: 50%;
+  height: 1.72em;
+  transform: translateY(-50%) rotate(-1.4deg);
+  pointer-events: none;
+  /* Peint de gauche à droite, dans le sens du geste. */
+  clip-path: inset(0 100% 0 0);
+  animation: pinceau-geste .8s cubic-bezier(.32, .68, .28, 1) .12s forwards;
 }
-@keyframes pinceau-souligne {
-  to { background-size: 100% 0.5em, 97% 0.32em; }
+@keyframes pinceau-geste {
+  to { clip-path: inset(0 -3% 0 0); }
 }
+
 
 /* Entrée des cartes : léger glissement + dépôt progressif, en cascade. */
 .item, .admin-item { animation: entree-item .45s cubic-bezier(.25, .6, .3, 1) both; }
@@ -572,7 +574,7 @@ footer.foot .mention { font-size: var(--cerba-text-xs); max-width: 440px; }
     animation-iteration-count: 1 !important;
     transition-duration: .01ms !important;
   }
-  .cerba-title__accent { background-size: 100% 0.5em, 97% 0.32em; }
+  .pinceau { clip-path: inset(0 -3% 0 0); }
 }
 
 @media (max-width: 600px) {
