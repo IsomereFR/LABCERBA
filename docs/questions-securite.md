@@ -46,6 +46,13 @@ Cible : comptes nommés adossés à l'annuaire Cerba (SSO), avec l'identité de
 l'auteur enregistrée à chaque publication. La colonne `publie_par` existe
 déjà en base et attend ces comptes. Charge estimée : 3 à 5 jours.
 
+En attendant, ce mot de passe n'est plus devinable par force brute : 10
+échecs par adresse IP puis blocage de 15 minutes, sur la page de connexion
+comme sur chaque écriture, et chaque essai pendant le blocage le prolonge.
+*Limite :* ce compteur vit en mémoire du processus — il arrête un script, pas
+une attaque distribuée et patiente. La parade complète (pare-feu applicatif
+ou compteur partagé) dépend de l'hébergement qu'ils retiendront.
+
 ---
 
 ### « Peut-on écrire dans la base depuis le navigateur ? »
@@ -106,6 +113,19 @@ un risque, elle se traite par la documentation et le transfert.
 
 ---
 
+### « Que voit-on quand l'outil rencontre une erreur ? »
+
+Un message générique, et rien d'autre. Le message d'erreur de la base de
+données — qui nomme la table, ses colonnes et ses contraintes, c'est-à-dire
+une carte du schéma offerte à qui sonde l'API — est journalisé côté serveur
+et ne remonte pas au navigateur.
+
+Les saisies sont également bornées : 64 Kio pour une requête, 200 caractères
+pour un libellé d'analyse, 2 000 pour un commentaire. Sans ces bornes, un
+porteur du mot de passe peut écrire des mégaoctets en base.
+
+---
+
 ### « Quelles sauvegardes ? Quelle restauration ? »
 
 À définir selon leur standard interne, et à inscrire au contrat en scénario
@@ -124,7 +144,8 @@ Aucun engagement de niveau de service n'est pris à ce stade.
 Le point important est ailleurs : l'outil affiche des indisponibilités, il ne
 les provoque pas. S'il tombe, la production du laboratoire n'est pas
 affectée ; c'est l'information des clients qui l'est. Une sonde de
-disponibilité avec alerte est prévue (chantier #9), et la procédure doit
+disponibilité avec alerte est prévue (chantier #7 du §5.3 du dossier), et la
+procédure doit
 prévoir le canal de repli habituel — courriel ou téléphone — si l'outil est
 indisponible.
 
@@ -144,10 +165,21 @@ choix, pas un oubli.
 
 ### « Et le détournement de clics, les en-têtes de sécurité ? »
 
-Seul `X-Robots-Tag` est posé à ce jour. Il manque une politique de sécurité
-du contenu (CSP), la restriction de cadrage (`frame-ancestors`), HSTS et
-`Referrer-Policy` : chantier #5, une demi-journée. C'est de toute façon un
-prérequis de l'intégration en cadre dans leur site (option B).
+En place : politique de sécurité du contenu (CSP) qui interdit tout script
+venu d'un autre domaine, `frame-ancestors 'none'` doublé de `X-Frame-Options`
+— l'application ne peut donc pas être affichée dans un cadre pour piéger un
+clic —, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`,
+HSTS, et suppression de l'en-tête qui annonçait la version du framework.
+
+*Limite :* la CSP autorise les scripts en ligne, imposé par Next.js qui insère
+ainsi les données d'affichage. S'en passer suppose un chantier à part
+(*nonces*, middleware, rendu dynamique de chaque page), chiffrable si leur
+politique l'exige.
+
+*À noter pour l'intégration :* `frame-ancestors 'none'` interdit le cadrage
+par construction. L'option B du dossier (l'outil affiché dans une page de
+leur site) demande d'y inscrire leur domaine — l'emplacement est commenté
+dans `next.config.mjs`.
 
 ---
 

@@ -71,7 +71,7 @@ Aucun des deux n'est revendiqué ; il suffit de l'acter.
 | Documentation (`README.md`, `docs/`) | avec le dépôt | — |
 | Export de la base (`pg_dump`) | leur infrastructure | données de démonstration fictives à ce stade |
 | Comptes d'hébergement | créés **par Cerba**, jamais transférés | voir §3 |
-| Secrets (mots de passe, clés API) | **régénérés par Cerba**, jamais transmis | voir §5.1 |
+| Secrets (mots de passe, clés API) | **régénérés par Cerba**, jamais transmis | voir §5.2 |
 
 ---
 
@@ -203,35 +203,70 @@ Cette section est volontairement franche : la maquette est fonctionnelle,
 elle n'est pas prête pour un usage en production. Rien ici n'est bloquant au
 sens « impossible », tout est chiffré.
 
-### 5.1 Bloquants
+### 5.1 Déjà corrigé
+
+Ces points figuraient dans la liste des chantiers ; ils sont traités et
+vérifiables dans le code.
+
+| Sujet | Ce qui a été fait | Où |
+|---|---|---|
+| **Limitation des tentatives** | 10 échecs par adresse IP, puis blocage 15 min, sur `/api/acces` **et** `/api/entrees`. Chaque nouvel essai pendant le blocage le prolonge. | `lib/rate-limit.ts` |
+| **En-têtes de sécurité** | CSP (dont `frame-ancestors 'none'`), `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, HSTS, et suppression de `X-Powered-By` | `next.config.mjs` |
+| **Comparaison des mots de passe** | Le test de longueur qui précédait `timingSafeEqual` court-circuitait et laissait fuir la longueur du mot de passe par le temps de réponse. Les deux valeurs sont désormais réduites à une empreinte SHA-256 de taille fixe avant comparaison. | `lib/secret-compare.ts` |
+| **Bornes de saisie** | Corps de requête plafonné à 64 Kio ; libellé 200 caractères, délai 200, commentaire 2 000. Sans elles, un porteur du mot de passe écrit des mégaoctets en base. | `app/api/entrees/route.ts` |
+| **Fuite du schéma** | Le message d'erreur de PostgreSQL ne remonte plus au navigateur — il nommait la table, les colonnes et les contraintes. Il est journalisé côté serveur. | `app/api/entrees/route.ts` |
+| **Configuration incomplète** | Variables absentes : message générique au client, cause exacte dans le journal serveur, au lieu d'une exception non rattrapée. | `app/api/entrees/route.ts` |
+
+Deux limites à énoncer plutôt qu'à laisser découvrir :
+
+- le compteur de tentatives vit **en mémoire du processus**. En hébergement
+  sans serveur, chaque instance a le sien et tout repart à zéro au démarrage à
+  froid : cela arrête un script, pas une attaque distribuée et patiente. La
+  parade complète est un pare-feu applicatif devant l'application, ou un
+  compteur partagé (Redis) — l'un et l'autre dépendent du scénario
+  d'hébergement retenu ;
+- la CSP autorise `'unsafe-inline'` sur les scripts, imposé par Next.js qui
+  insère les données d'hydratation en ligne. S'en passer suppose des *nonces*,
+  donc un middleware et le rendu dynamique de chaque page : un chantier à part,
+  à chiffrer si l'équipe Cerba l'exige. `script-src 'self'` interdit déjà tout
+  script venu d'un autre domaine, ce qui est la protection qui compte ici.
+
+`frame-ancestors 'none'` interdit volontairement l'affichage en cadre : c'est
+la valeur sûre par défaut. **L'intégration en cadre dans leur site (option B
+du §4) demande de la remplacer par leur domaine** — l'emplacement exact est
+commenté dans `next.config.mjs`.
+
+### 5.2 Bloquants restants
 
 | # | Sujet | État actuel | À faire | Charge |
 |---|---|---|---|---|
 | 1 | **Authentification** | mot de passe unique partagé (`ADMIN_PASSWORD`) | comptes nommés, idéalement via l'annuaire Cerba (SSO) | 3 à 5 j |
 | 2 | **Traçabilité des auteurs** | colonne `publie_par` en place mais **vide** | la remplir avec l'identité issue du SSO | inclus dans #1 |
 | 3 | **Secrets** | `.env.local.example` contient l'URL et la clé publique d'un projet de démonstration | Cerba crée son projet, génère ses propres clés, ne réutilise rien | 1 h |
-| 4 | **Limitation des tentatives** | aucune sur `/api/acces` | limiter les essais par IP (ou disparaît avec le SSO) | 0,5 j |
-| 5 | **En-têtes de sécurité** | seul `X-Robots-Tag` est posé | ajouter CSP, `frame-ancestors`, HSTS, `Referrer-Policy` | 0,5 j |
-| 6 | **Garde-fous de maquette** | bandeau « maquette », `noindex`, mot de passe sur la consultation | à retirer **délibérément**, un par un, le jour du lancement | 0,5 j |
+| 4 | **Garde-fous de maquette** | bandeau « maquette », `noindex`, mot de passe sur la consultation | à retirer **délibérément**, un par un, le jour du lancement | 0,5 j |
 
-### 5.2 Fortement conseillés
+Le chantier n° 1 reste **le** sujet : tant que le mot de passe est partagé,
+aucun des points du §5.1 ne compense le fait que l'outil ne sait pas qui
+publie.
+
+### 5.3 Fortement conseillés
 
 | # | Sujet | À faire | Charge |
 |---|---|---|---|
-| 7 | Tests automatisés et intégration continue | aucun test à ce jour ; en ajouter sur la validation des données et les règles d'accès | 2 à 3 j |
-| 8 | Mise à jour des dépendances | activer Dependabot ou Renovate | 1 h |
-| 9 | Supervision | sonde de disponibilité + alerte ; une page d'état hors service ne prévient personne | 0,5 j |
-| 10 | Sauvegardes et restauration | définir la fréquence, **et tester une restauration** | selon leur standard |
-| 11 | Identité visuelle | couleurs et polices sont des valeurs de repli, pas la charte Cerba (voir `README.md`) | à cadrer avec leur direction de la communication |
+| 5 | Tests automatisés et intégration continue | aucun test à ce jour ; en ajouter sur la validation des données et les règles d'accès | 2 à 3 j |
+| 6 | Mise à jour des dépendances | activer Dependabot ou Renovate | 1 h |
+| 7 | Supervision | sonde de disponibilité + alerte ; une page d'état hors service ne prévient personne | 0,5 j |
+| 8 | Sauvegardes et restauration | définir la fréquence, **et tester une restauration** | selon leur standard |
+| 9 | Identité visuelle | couleurs et polices sont des valeurs de repli, pas la charte Cerba (voir `README.md`) | à cadrer avec leur direction de la communication |
 
-### 5.3 Décisions métier à prendre par Cerba
+### 5.4 Décisions métier à prendre par Cerba
 
 - Qui publie ? (quelques responsables de production, pas les 40 personnes)
 - Qui relit avant publication, s'il doit y avoir une relecture ?
 - Sous quel délai après détection d'un incident ?
 - La consultation est-elle publique, ou réservée aux laboratoires clients
   identifiés ? *Cette question change l'architecture d'authentification : à
-  trancher avant le chantier #1.*
+  trancher avant le chantier #1 du §5.2.*
 - Quelle formulation officielle pour les commentaires (voir §6.3) ?
 
 ---
@@ -252,8 +287,14 @@ sens « impossible », tout est chiffré.
 - Les données envoyées sont validées côté serveur (statut parmi trois valeurs
   autorisées, champs typés) avant d'atteindre la base.
 
+S'y ajoutent, depuis le durcissement du §5.1 : un plafond de 10 tentatives par
+adresse IP avant blocage, des bornes de taille sur chaque champ et sur le corps
+de requête, une comparaison de mots de passe qui ne laisse plus fuir leur
+longueur par le temps de réponse, et des messages d'erreur qui ne décrivent
+plus le schéma de la base.
+
 Le point faible n'est donc pas l'architecture, c'est le **mot de passe
-partagé** — d'où le chantier #1.
+partagé** — d'où le chantier #1 du §5.2.
 
 ### 6.2 Nature des données — la question de l'hébergement de santé
 
@@ -291,6 +332,10 @@ Mesures proposées :
 - rappel affiché sous le champ dans la console d'administration ;
 - possibilité d'ajouter un contrôle automatique bloquant (0,5 j).
 
+Le champ est désormais borné à 2 000 caractères, ce qui limite l'ampleur d'une
+saisie mais ne remplace en rien la consigne : 2 000 caractères suffisent
+largement à écrire un nom de patient.
+
 ### 6.4 Chaîne d'approvisionnement logicielle
 
 4 dépendances directes, 59 paquets au total, aucun script chargé depuis un
@@ -306,7 +351,7 @@ résolution, durée de l'incident) — c'est ce qui permet au laboratoire de
 prouver qu'il a informé ses clients, quand, et combien de temps a duré
 l'incident (ISO 15189:2022 §6.8.2). En revanche, il n'y a **pas encore** de
 journal technique nominatif « qui a fait quoi », faute de comptes nommés. Le
-chantier #1 le débloque.
+chantier #1 du §5.2 le débloque.
 
 ---
 
@@ -354,12 +399,12 @@ disponibles.
 |---|---|
 | 0 | Décision, cadrage juridique (§2), réponse du DPO sur la qualification des données (§6.2) |
 | 1 | Création des comptes Cerba, transfert du dépôt, régénération des secrets, premier déploiement sur leur environnement de recette |
-| 2–3 | Chantiers bloquants #1 à #5 : authentification nommée, en-têtes, limitation des tentatives |
+| 2–3 | Chantiers bloquants du §5.2 : authentification nommée et traçabilité des auteurs |
 | 4 | Tests, intégration continue, supervision, sauvegardes ; revue de code et test d'intrusion par leurs soins |
-| 5 | Retrait des garde-fous de maquette (#6), mise en service sur le sous-domaine (option A), bandeau sur la page d'accueil (option D) |
+| 5 | Retrait des garde-fous de maquette (#4), mise en service sur le sous-domaine (option A), bandeau sur la page d'accueil (option D) |
 | 6+ | Accompagnement, puis autonomie |
 
-Six semaines est un rythme confortable si les décisions du §5.3 sont prises
+Six semaines est un rythme confortable si les décisions du §5.4 sont prises
 en semaine 0. Ce sont elles, et non le développement, qui commandent le
 calendrier.
 
@@ -375,5 +420,5 @@ calendrier.
 | Réversibilité | totale : code libre, données exportables en une commande |
 
 Le coût d'entrée est faible et la sortie est ouverte. Ce qui se décide en
-séance, ce n'est pas un budget, c'est la question du §5.3 : qui publie, et
+séance, ce n'est pas un budget, c'est la question du §5.4 : qui publie, et
 pour qui.
