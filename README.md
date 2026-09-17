@@ -32,6 +32,18 @@ En production, diffuser l'**alias stable** Vercel (ex.
 `https://<projet>.vercel.app/` et `https://<projet>.vercel.app/admin`), jamais
 l'URL de build propre à un déploiement.
 
+## Reprise par Cerba
+
+Deux documents répondent à la question « comment Cerba internalise-t-il
+complètement cet outil et l'intègre-t-il à son site ? » :
+
+- [`docs/reprise-internalisation.md`](docs/reprise-internalisation.md) —
+  transfert des droits et du dépôt, trois scénarios d'hébergement (dont un
+  entièrement chez Cerba, sans tiers), quatre montages d'intégration au site,
+  chantiers restants chiffrés, calendrier et continuité d'exploitation.
+- [`docs/questions-securite.md`](docs/questions-securite.md) — réponses
+  préparées aux questions d'une équipe sécurité, limites actuelles comprises.
+
 ## Pile
 
 - **Next.js App Router** (TypeScript) sur Vercel, fonctions en région UE (`fra1`, cf. `vercel.json`).
