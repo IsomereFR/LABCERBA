@@ -32,6 +32,18 @@ En production, diffuser l'**alias stable** Vercel (ex.
 `https://<projet>.vercel.app/` et `https://<projet>.vercel.app/admin`), jamais
 l'URL de build propre à un déploiement.
 
+## Reprise par Cerba
+
+Deux documents répondent à la question « comment Cerba internalise-t-il
+complètement cet outil et l'intègre-t-il à son site ? » :
+
+- [`docs/reprise-internalisation.md`](docs/reprise-internalisation.md) —
+  transfert des droits et du dépôt, trois scénarios d'hébergement (dont un
+  entièrement chez Cerba, sans tiers), quatre montages d'intégration au site,
+  chantiers restants chiffrés, calendrier et continuité d'exploitation.
+- [`docs/questions-securite.md`](docs/questions-securite.md) — réponses
+  préparées aux questions d'une équipe sécurité, limites actuelles comprises.
+
 ## Pile
 
 - **Next.js App Router** (TypeScript) sur Vercel, fonctions en région UE (`fra1`, cf. `vercel.json`).
@@ -86,6 +98,30 @@ Toutes listées dans [`.env.local.example`](.env.local.example) :
 - Le verrou de démonstration de la consultation est isolé dans
   `lib/demo-lock.ts` : cookie httpOnly posé par `/api/acces` après
   vérification serveur.
+- **Tentatives limitées** (`lib/rate-limit.ts`) : 10 échecs par adresse IP puis
+  blocage de 15 min, sur `/api/acces` comme sur `/api/entrees` ; chaque essai
+  pendant le blocage le prolonge. Compteur **en mémoire du processus** — il
+  arrête un script, pas une attaque distribuée ; la parade complète est un
+  pare-feu applicatif ou un compteur partagé, selon l'hébergement.
+- **Comparaison à temps constant** (`lib/secret-compare.ts`) : les deux valeurs
+  passent par une empreinte SHA-256 de taille fixe. Le test de longueur qui
+  précédait `timingSafeEqual` court-circuitait et laissait fuir la longueur du
+  mot de passe attendu par le temps de réponse.
+- **Bornes de saisie** : corps de requête 64 Kio, libellé 200 caractères,
+  délai 200, commentaire 2 000.
+- **Aucune fuite de schéma** : le message d'erreur PostgreSQL est journalisé
+  côté serveur, jamais renvoyé au navigateur.
+- **En-têtes de sécurité** (`next.config.mjs`) : CSP, `X-Frame-Options`,
+  `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, HSTS,
+  `X-Robots-Tag`, et `poweredByHeader: false`.
+  - `connect-src` est déduit de `NEXT_PUBLIC_SUPABASE_URL` : chaque
+    déploiement n'autorise que **son** projet Supabase (REST + WebSocket).
+  - `frame-ancestors 'none'` interdit le cadrage. **Pour intégrer l'outil dans
+    une page du site Cerba**, y inscrire leur domaine — emplacement commenté
+    dans le fichier.
+  - `'unsafe-inline'` sur `script-src` est imposé par Next.js (données
+    d'hydratation en ligne) ; s'en passer suppose des *nonces*, donc un
+    middleware et le rendu dynamique de chaque page.
 
 ## Garde-fous obligatoires (PRD §5.1)
 

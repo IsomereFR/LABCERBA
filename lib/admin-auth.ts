@@ -1,4 +1,4 @@
-import { timingSafeEqual } from 'crypto';
+import { egalConstant } from './secret-compare';
 
 /**
  * Vérification du mot de passe d'administration — serveur uniquement.
@@ -8,7 +8,5 @@ import { timingSafeEqual } from 'crypto';
 export function adminPasswordValide(motDePasse: string | null): boolean {
   const attendu = process.env.ADMIN_PASSWORD;
   if (!attendu || !motDePasse) return false;
-  const a = Buffer.from(motDePasse);
-  const b = Buffer.from(attendu);
-  return a.length === b.length && timingSafeEqual(a, b);
+  return egalConstant(motDePasse, attendu);
 }

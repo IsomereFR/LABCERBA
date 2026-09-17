@@ -1,4 +1,5 @@
-import { createHash, timingSafeEqual } from 'crypto';
+import { createHash } from 'crypto';
+import { egalConstant } from './secret-compare';
 
 /**
  * Verrou de démonstration sur la CONSULTATION (PRD §5.1).
@@ -22,12 +23,6 @@ export function demoToken(): string {
   return createHash('sha256')
     .update(`labcerba-demo:${process.env.DEMO_PASSWORD ?? ''}`)
     .digest('hex');
-}
-
-function egalConstant(a: string, b: string): boolean {
-  const ba = Buffer.from(a);
-  const bb = Buffer.from(b);
-  return ba.length === bb.length && timingSafeEqual(ba, bb);
 }
 
 export function demoPasswordValide(motDePasse: string): boolean {
